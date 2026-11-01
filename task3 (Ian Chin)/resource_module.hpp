@@ -142,18 +142,6 @@ public:
         return true;
     }
 
-    bool updateLocation(string id, string location) {
-        int i = findIndex(id);
-        if (i == -1) { ui::error("Resource " + id + " not found."); return false; }
-        if (location == "" || location.find(',') != string::npos) {
-            ui::error("Location cannot be empty or contain commas.");
-            return false;
-        }
-        resources[i].location = location;
-        ui::success("Location of " + id + " updated to " + location + ".");
-        return true;
-    }
-
     bool removeResource(string id) {
         int i = findIndex(id);
         if (i == -1) { ui::error("Resource " + id + " not found."); return false; }
@@ -172,21 +160,6 @@ public:
     }
 
     // ---------- 2. Display ----------
-
-    void showResource(string id) {
-        int i = findIndex(id);
-        if (i == -1) { ui::error("Resource " + id + " not found."); return; }
-        Resource &r = resources[i];
-        cout << "\n  Resource ID    : " << r.resourceId << "\n"
-             << "  Type           : " << resourceTypeToString(r.type) << "\n"
-             << "  Location       : " << r.location << "\n"
-             << "  Status         : " << resourceStatusToString(r.status) << "\n"
-             << "  Current Parcel : " << r.parcelId << "\n"
-             << "  Current Request: " << r.requestId << "\n";
-        if (r.status == OCCUPIED)
-            cout << "  Service        : " << serviceToString(r.service) << "\n";
-        cout << "  Transactions   : " << r.transactions << "\n";
-    }
 
     void displayAll() {
         if (resourceCount == 0) { ui::info("No resources registered yet."); return; }
