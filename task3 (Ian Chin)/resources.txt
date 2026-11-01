@@ -1,0 +1,11 @@
+# ID,Type(1-4),Location,Status(1-4),ParcelID,RequestID,Service(1-5),Transactions
+# Type: 1=Collection Counter 2=Delivery Desk 3=Special-Handling Counter 4=Delivery Personnel
+# Status: 1=Available 2=Occupied 3=Unavailable 4=Maintenance
+C01,1,Block A Counter 1,1,-,-,1,0
+C02,1,Block A Counter 2,1,-,-,1,0
+C03,1,Block B Counter 1,4,-,-,1,0
+D01,2,Main Office Desk,1,-,-,1,0
+S01,3,Block A Counter 3,1,-,-,1,0
+DP01,4,-,1,-,-,1,0
+DP02,4,-,1,-,-,1,0
+DP03,4,-,3,-,-,1,0
