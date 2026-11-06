@@ -21,6 +21,13 @@ public:
     bool isEmpty() const { return count == 0; }
     int  size() const { return count; }
 
+    // True if this parcel ID is already waiting in the queue. O(n).
+    bool contains(const std::string& id) const {
+        for (Node* c = front; c; c = c->next)
+            if (c->id == id) return true;
+        return false;
+    }
+
     void enqueue(const std::string& id) {
         Node* n = new Node(id);
         if (rear) rear->next = n; else front = n;

@@ -2,12 +2,14 @@
 #include <string>
 #include "task1 (Isac Lim)/parcel_menu.hpp"
 #include "task3 (Ian Chin)/resource_menu.hpp"
+#include "task4 (Muhlis)/activity_menu.hpp"
 #include "task5 (kerjinn)/category_module.hpp"
 using namespace std;
 
 const string PARCEL_FILE    = "task1 (Isac Lim)/parcels.txt";
 const string RESOURCE_FILE  = "task3 (Ian Chin)/resources.txt";
 const string CATEGORY_FILE  = "task1 (Isac Lim)/parcels.txt";
+const string ACTIVITY_FILE  = "task4 (Muhlis)/activities.txt";
 
 void showMainMenu(ParcelModule &parcels, ResourceModule &resources) {
     ui::bigTitle("SMART CAMPUS PARCEL SYSTEM", "Integrated Prototype - Main Menu");
@@ -22,7 +24,7 @@ void showMainMenu(ParcelModule &parcels, ResourceModule &resources) {
          << "    [1]  Task 1 - Parcel Intake, Sorting & Processing\n"
          << "    [2]  Task 2 - Service & Collection Requests     (coming soon)\n"
          << "    [3]  Task 3 - Counter & Delivery Resources\n"
-         << "    [4]  Task 4 - Activity & Record History         (coming soon)\n"
+         << "    [4]  Task 4 - Activity & Record History\n"
          << "    [5]  Task 5 - Parcel Category Organisation\n"
          << "\n    [0]  Exit (data is saved automatically)\n"
          << "  " << ui::repeat("-", ui::WIDTH) << "\n\n";
@@ -37,6 +39,12 @@ int main() {
     ResourceModule resources(parcels);
     resources.loadFromFile(RESOURCE_FILE);
 
+    // Task 4 records every Task 1 / Task 3 action (connected after loading)
+    ActivityModule activities(parcels, resources);
+    activities.loadFromFile(ACTIVITY_FILE);
+    parcels.setLog(&activities);
+    resources.setLog(&activities);
+
     ui::clearScreen();
     while (true) {
         showMainMenu(parcels, resources);
@@ -48,6 +56,8 @@ int main() {
             parcel_menu::run(parcels, PARCEL_FILE);
         } else if (choice == 3) {
             resource_menu::run(resources, parcels, RESOURCE_FILE, PARCEL_FILE);
+        } else if (choice == 4) {
+            activity_menu::run(activities, parcels, resources, PARCEL_FILE, RESOURCE_FILE);
         } else if (choice == 5) {
             task5::runCategoryModule(CATEGORY_FILE);   // BST-based category organisation
         } else {

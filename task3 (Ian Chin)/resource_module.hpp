@@ -19,6 +19,7 @@ private:
     CircularQueue rotation[5];
 
     ParcelModule &parcels;               // Task 1 parcel records
+    ActivityLog *activityLog;            // Task 4 history (nullptr = not connected)
 
     // Returns position of resource in the array, or -1 if not found
     int findIndex(string id) {
@@ -60,12 +61,14 @@ private:
         return -1;
     }
 
-    // Change the parcel status in Task 1 only if it is different
-    void setParcelStatus(string parcelId, ParcelStatus newStatus) {
+    // Report the action to Task 4 (with the resource and request involved),
+    // then change the parcel status in Task 1 only if it is different
+    void setParcelStatus(string parcelId, ParcelStatus newStatus, ActivityType action, string resourceId, string requestId) {
         Parcel *p = parcels.findParcel(parcelId);
         if (p == nullptr) return;
-        if (p->status == newStatus) return;
         if (isTerminalStatus(p->status)) return;
+        if (activityLog) activityLog->record(action, parcelId, requestId, resourceId, p->status, newStatus);
+        if (p->status == newStatus) return;
         ParcelStatus old = p->status;
         p->status = newStatus;
         ui::info("Parcel " + parcelId + " status: " + statusToString(old) + " -> " + statusToString(newStatus));
@@ -84,9 +87,11 @@ private:
     }
 
 public:
-    ResourceModule(ParcelModule &p) : parcels(p) {
+    ResourceModule(ParcelModule &p) : parcels(p), activityLog(nullptr) {
         resourceCount = 0;
     }
+
+    void setLog(ActivityLog *log) { activityLog = log; }
 
     int total() { return resourceCount; }
 
@@ -99,6 +104,22 @@ public:
     }
 
     bool exists(string id) { return findIndex(id) != -1; }
+
+    // Returns the ID of the resource handling this parcel, or "-" if none
+    string resourceHolding(string parcelId) {
+        for (int i = 0; i < resourceCount; i++)
+            if (resources[i].status == OCCUPIED && resources[i].parcelId == parcelId) return resources[i].resourceId;
+        return "-";
+    }
+
+    // Frees a resource without changing the parcel (used by Task 4 undo)
+    bool releaseResource(string id) {
+        int i = findIndex(id);
+        if (i == -1 || resources[i].status != OCCUPIED) return false;
+        resources[i].status = AVAILABLE;
+        clearJob(resources[i]);
+        return true;
+    }
 
     // ---------- 1. Register and maintain ----------
 
@@ -278,9 +299,9 @@ public:
         r.service = service;
         ui::success("Parcel " + parcelId + " assigned to " + r.resourceId + " (" + resourceTypeToString(r.type) + ").");
 
-        if (service == CAMPUS_DELIVERY || service == RE_DELIVERY) setParcelStatus(parcelId, ParcelStatus::OutForDelivery);
-        else if (service == RETURN_TO_SENDER) setParcelStatus(parcelId, ParcelStatus::Processing);
-        else setParcelStatus(parcelId, ParcelStatus::ReadyForCollection);
+        if (service == CAMPUS_DELIVERY || service == RE_DELIVERY) setParcelStatus(parcelId, ParcelStatus::OutForDelivery, ActivityType::Assignment, r.resourceId, requestId);
+        else if (service == RETURN_TO_SENDER) setParcelStatus(parcelId, ParcelStatus::Processing, ActivityType::Assignment, r.resourceId, requestId);
+        else setParcelStatus(parcelId, ParcelStatus::ReadyForCollection, ActivityType::Assignment, r.resourceId, requestId);
         return true;
     }
 
@@ -295,8 +316,8 @@ public:
             ui::error("Resource " + id + " has no job to complete (status: " + resourceStatusToString(r.status) + ").");
             return false;
         }
-        if (r.service == RETURN_TO_SENDER) setParcelStatus(r.parcelId, ParcelStatus::Returned);
-        else setParcelStatus(r.parcelId, ParcelStatus::Collected);
+        if (r.service == RETURN_TO_SENDER) setParcelStatus(r.parcelId, ParcelStatus::Returned, ActivityType::JobCompleted, id, r.requestId);
+        else setParcelStatus(r.parcelId, ParcelStatus::Collected, ActivityType::JobCompleted, id, r.requestId);
 
         ui::success("Job for parcel " + r.parcelId + " completed by " + id + ". Resource is Available again.");
         r.transactions++;
@@ -314,7 +335,8 @@ public:
             ui::error("Resource " + id + " has no job to cancel.");
             return false;
         }
-        setParcelStatus(r.parcelId, ParcelStatus::Pending);
+        setParcelStatus(r.parcelId, ParcelStatus::Pending, ActivityType::JobCancelled, id, r.requestId);
+        parcels.requeue(r.parcelId);     // back into Task 1's processing queue (before clearJob wipes the ID)
         ui::success("Assignment of parcel " + r.parcelId + " to " + id + " cancelled.");
         r.status = AVAILABLE;
         clearJob(r);
@@ -358,9 +380,12 @@ public:
                 resources[other].parcelId = parcelId;
                 resources[other].requestId = requestId;
                 resources[other].service = service;
+                Parcel *moved = parcels.findParcel(parcelId);
+                if (moved && activityLog) activityLog->record(ActivityType::Reassignment, parcelId, requestId, resources[other].resourceId, moved->status, moved->status);
                 ui::success("Parcel " + parcelId + " re-assigned to " + resources[other].resourceId + ".");
             } else {
-                setParcelStatus(parcelId, ParcelStatus::Pending);
+                setParcelStatus(parcelId, ParcelStatus::Pending, ActivityType::ResourceUnavailable, id, requestId);
+                parcels.requeue(parcelId);
                 ui::warn("No other " + resourceTypeToString(r.type) + " available. Parcel " + parcelId + " must be assigned again later.");
             }
             return true;

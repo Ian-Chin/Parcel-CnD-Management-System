@@ -53,6 +53,13 @@ public:
     bool isEmpty() const { return count == 0; }
     int  size() const { return count; }
 
+    // True if this parcel already has an entry in the heap. O(n).
+    bool contains(const std::string& id) const {
+        for (int i = 0; i < count; ++i)
+            if (heap[i].parcelId == id) return true;
+        return false;
+    }
+
     void push(int priority, long seq, const std::string& id) {
         if (count == capacity) grow();
         heap[count].priority = priority;

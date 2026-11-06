@@ -1,0 +1,5 @@
+# ActivityID,ParcelID,RequestID,ResourceID,Type(1-16),DateTime,PrevStatus(0-9),NewStatus(1-9),Reversed(0/1),Reverses
+# Type: 1=Registration 2=ParcelUpdate 3=Sorting 4=Processing 5=StatusChange 6=Removal 7=Assignment 8=JobCompleted
+#       9=JobCancelled 10=ResourceUnavailable 11=Reassignment 12=Cancellation 13=ReportedMissing
+#       14=CollectionConfirmation 15=ReturnProcessing 16=Reversal
+# Status: 0=none 1=Received 2=Pending 3=Processing 4=Ready 5=OutForDelivery 6=Collected 7=Returned 8=Missing 9=Cancelled

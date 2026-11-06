@@ -7,6 +7,7 @@
 #include "parcel_registry.hpp"
 #include "parcel_queue.hpp"
 #include "parcel_priority_queue.hpp"
+#include "../task4 (Muhlis)/activity_log.hpp"
 
 class ParcelModule {
 private:
@@ -14,6 +15,7 @@ private:
     ParcelQueue         intakeQueue;
     ParcelPriorityQueue processQueue;
     long                seqCounter;
+    ActivityLog*        activityLog;   // Task 4 history (nullptr = not connected)
 
     static bool isValidId(const std::string& s) {
         if (s.size() < 3 || s.size() > 12) return false;
@@ -50,7 +52,8 @@ private:
     }
 
 public:
-    ParcelModule() : seqCounter(0) {}
+    ParcelModule() : seqCounter(0), activityLog(nullptr) {}
+    void setLog(ActivityLog* log) { activityLog = log; }
 
     bool registerParcel(const std::string& parcelId, const std::string& recipientId,
                         const std::string& recipientName, const std::string& company,
@@ -73,6 +76,7 @@ public:
 
         registry.insert(p);
         intakeQueue.enqueue(parcelId);
+        if (activityLog) activityLog->record(ActivityType::Registration, parcelId, "-", "-", ParcelStatus::Received, ParcelStatus::Received);
         ui::success("Parcel " + parcelId + " registered and added to the intake queue.");
         ui::parcelCard(p, "NEW PARCEL");
         return true;
@@ -174,6 +178,7 @@ public:
             if (!p || p->status != ParcelStatus::Received) continue;
             p->status = ParcelStatus::Pending;
             processQueue.push(typePriority(p->type), p->arrivalSeq, id);
+            if (activityLog) activityLog->record(ActivityType::Sorting, id, "-", "-", ParcelStatus::Received, ParcelStatus::Pending);
             std::cout << "  - " << ui::fit(id, 9) << ui::fit(typeToString(p->type), 18)
                       << "-> priority level " << typePriority(p->type) << "\n";
             ++moved;
@@ -207,6 +212,7 @@ public:
                     p->status = ParcelStatus::ReadyForCollection;
                     break;
             }
+            if (activityLog) activityLog->record(ActivityType::Processing, id, "-", "-", ParcelStatus::Pending, p->status);
             return p;
         }
         ui::info("No pending parcels to process (processing queue is empty). Sort incoming parcels first.");
@@ -218,6 +224,7 @@ public:
         if (!p) { ui::error("Parcel " + id + " not found."); return false; }
         if (!isValidText(newName)) { ui::error("Invalid name (empty, too long or contains commas)."); return false; }
         p->recipientName = newName;
+        if (activityLog) activityLog->record(ActivityType::ParcelUpdate, id, "-", "-", p->status, p->status);
         ui::success("Recipient name updated.");
         return true;
     }
@@ -229,6 +236,7 @@ public:
             ui::error("Type can only be changed while the status is 'Received'."); return false;
         }
         p->type = newType;
+        if (activityLog) activityLog->record(ActivityType::ParcelUpdate, id, "-", "-", p->status, p->status);
         ui::success("Parcel type updated to " + typeToString(newType) + ".");
         return true;
     }
@@ -242,12 +250,15 @@ public:
         if (p->status == newStatus) { ui::error("Parcel already has that status."); return false; }
         ParcelStatus old = p->status;
         p->status = newStatus;
+        if (activityLog) activityLog->record(ActivityType::StatusChange, id, "-", "-", old, newStatus);
         ui::success("Status changed: " + statusToString(old) + " -> " + statusToString(newStatus));
         return true;
     }
 
     bool removeParcel(const std::string& id) {
         if (registry.isEmpty()) { ui::error("There are no records to remove."); return false; }
+        Parcel* gone = registry.find(id);
+        if (gone && activityLog) activityLog->record(ActivityType::Removal, id, "-", "-", gone->status, gone->status);
         if (!registry.remove(id)) { ui::error("Parcel " + id + " not found."); return false; }
         ui::success("Parcel " + id + " removed from the records.");
         return true;
@@ -305,6 +316,22 @@ public:
             ++loaded;
         }
         return loaded;
+    }
+
+    // Puts a Received / Pending parcel back into its queue (used by Task 3 and
+    // Task 4 undo). Skips it if it is already there, so it never appears twice.
+    bool requeue(const std::string& id) {
+        Parcel* p = registry.find(id);
+        if (!p) return false;
+        if (p->status == ParcelStatus::Received) {
+            if (!intakeQueue.contains(id)) intakeQueue.enqueue(id);
+            return true;
+        }
+        if (p->status == ParcelStatus::Pending) {
+            if (!processQueue.contains(id)) processQueue.push(typePriority(p->type), p->arrivalSeq, id);
+            return true;
+        }
+        return false;
     }
 
     Parcel* findParcel(const std::string& id) { return registry.find(id); }
