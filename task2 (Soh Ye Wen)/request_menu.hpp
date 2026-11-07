@@ -35,8 +35,10 @@ bool doCreate(RequestModule& m, ParcelModule& parcels) {
     cout << "\n";
     string staffId = readId("Staff ID (0 to cancel)");
     if (staffId == "0") return false;
-    string parcelId = readId("Parcel ID");
-    string recipientId = readId("Recipient ID");
+    string parcelId = readId("Parcel ID (0 to cancel)");
+    if (parcelId == "0") return false;
+    string recipientId = readId("Recipient ID (0 to cancel)");
+    if (recipientId == "0") return false;
     cout << "\n    1 Recipient Collection   2 Campus Delivery   3 Special Handling\n"
          << "    4 Return to Sender       5 Re-delivery\n\n";
     int service = readInt("Service (0 to cancel)", 0, 5);
@@ -51,7 +53,7 @@ bool doProcessChosen(RequestModule& m) {
     m.displayActive();
     cout << "\n";
     string id = readId("Request ID (0 to cancel)");
-    if (id == "0") return false;
+    if (id == "" || id == "0") return false;
     cout << "\n";
     return m.processById(id);
 }
@@ -62,7 +64,7 @@ bool doFinish(RequestModule& m) {
     m.displayActive();
     cout << "\n";
     string id = readId("Request ID (0 to cancel)");
-    if (id == "0") return false;
+    if (id == "" || id == "0") return false;
     cout << "\n";
     return m.finishRequest(id);
 }
@@ -73,7 +75,7 @@ bool doCancel(RequestModule& m) {
     m.displayActive();
     cout << "\n";
     string id = readId("Request ID (0 to cancel)");
-    if (id == "0") return false;
+    if (id == "" || id == "0") return false;
     if (!confirm("Cancel request " + id + "?")) { ui::info("Nothing cancelled."); return false; }
     cout << "\n";
     return m.cancelRequest(id);
@@ -97,7 +99,11 @@ void run(RequestModule& module, ParcelModule& parcels, ResourceModule& resources
 
         if (choice == 1) changed = doCreate(module, parcels);
         else if (choice == 2) { heading("ACTIVE REQUESTS"); module.displayActive(); }
-        else if (choice == 3) { heading("VIEW REQUEST"); module.viewRequest(readId("Request ID")); }
+        else if (choice == 3) {
+            heading("VIEW REQUEST");
+            string id = readId("Request ID (0 to cancel)");
+            if (id != "" && id != "0") module.viewRequest(id);
+        }
         else if (choice == 4) { heading("NEXT REQUEST"); module.showNext(); }
         else if (choice == 5) { heading("PROCESS NEXT REQUEST"); changed = module.processNext(); }
         else if (choice == 6) changed = doProcessChosen(module);
