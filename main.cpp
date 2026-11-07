@@ -4,12 +4,14 @@
 #include "task3 (Ian Chin)/resource_menu.hpp"
 #include "task4 (Muhlis)/activity_menu.hpp"
 #include "task5 (kerjinn)/category_module.hpp"
+#include "task2 (Soh Ye Wen)/request_module.hpp"
 using namespace std;
 
 const string PARCEL_FILE    = "data/parcels.txt";
 const string RESOURCE_FILE  = "data/resources.txt";
 const string CATEGORY_FILE  = "data/parcels.txt";
 const string ACTIVITY_FILE  = "data/activities.txt";
+const string REQUEST_FILE   = "data/requests.txt";
 
 void showMainMenu(ParcelModule &parcels, ResourceModule &resources) {
     cout << "\n  SMART CAMPUS PARCEL SYSTEM\n  " << ui::repeat("=", ui::WIDTH) << "\n"
@@ -18,7 +20,7 @@ void showMainMenu(ParcelModule &parcels, ResourceModule &resources) {
          << resources.total() << " resources ("
          << resources.countByStatus(AVAILABLE) << " free)\n\n"
          << "    1  Parcels      register, sort, process\n"
-         << "    2  Requests     not built yet\n"
+         << "    2  Requests     service requests\n"
          << "    3  Resources    counters and delivery staff\n"
          << "    4  History      activity log and undo\n"
          << "    5  Categories   parcel search tree\n\n"
@@ -40,6 +42,11 @@ int main() {
     parcels.setLog(&activities);
     resources.setLog(&activities);
 
+    // Task 2 service requests
+    RequestModule requests(parcels, resources);
+    requests.loadFromFile(REQUEST_FILE);
+    requests.setLog(&activities);
+
     ui::clearScreen();
     while (true) {
         showMainMenu(parcels, resources);
@@ -48,15 +55,16 @@ int main() {
 
         ui::clearScreen();
         if (choice == 1) parcel_menu::run(parcels, PARCEL_FILE);
+        else if (choice == 2) request_menu::run(requests, parcels, resources, REQUEST_FILE, PARCEL_FILE, RESOURCE_FILE);
         else if (choice == 3) resource_menu::run(resources, parcels, RESOURCE_FILE, PARCEL_FILE);
         else if (choice == 4) activity_menu::run(activities, parcels, resources, PARCEL_FILE, RESOURCE_FILE);
         else if (choice == 5) task5::runCategoryModule(CATEGORY_FILE);   // BST-based category organisation
-        else { ui::info("Requests (Task 2) is not built yet."); ui::pause(); }
         ui::clearScreen();
     }
 
     parcels.saveToFile(PARCEL_FILE);
     resources.saveToFile(RESOURCE_FILE);
+    requests.saveToFile(REQUEST_FILE);
     cout << "\n  [OK]    All data saved. Goodbye!\n\n";
     return 0;
 }
