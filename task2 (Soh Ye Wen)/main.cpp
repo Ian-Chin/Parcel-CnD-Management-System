@@ -16,6 +16,7 @@ int main() {
 
     RequestModule module(parcels, resources);
     int loaded = module.loadFromFile(REQUEST_FILE);
+    resources.setRequestLookup(&module);
     ui::clearScreen();
     if (loaded > 0) ui::success("Loaded " + to_string(loaded) + " request(s) from " + REQUEST_FILE);
 

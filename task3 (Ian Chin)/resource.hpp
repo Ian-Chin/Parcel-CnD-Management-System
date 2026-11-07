@@ -39,6 +39,16 @@ struct Resource {
     int transactions;      // number of jobs completed by this resource
 };
 
+// Connector to the Task 2 service requests. Task 3 keeps a pointer to this so
+// it can check whether a parcel already has an active request before a
+// walk-in assignment. When it is nullptr (Task 3 standalone) no check is made.
+class RequestLookup {
+public:
+    // Returns the ID of the Pending / Processing request for this parcel, or "-"
+    virtual string activeRequestFor(string parcelId) = 0;
+    virtual ~RequestLookup() {}
+};
+
 string resourceTypeToString(ResourceType t) {
     if (t == COLLECTION_COUNTER) return "Collection Counter";
     if (t == DELIVERY_DESK)      return "Delivery Desk";

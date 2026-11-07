@@ -20,6 +20,7 @@ private:
 
     ParcelModule &parcels;               // Task 1 parcel records
     ActivityLog *activityLog;            // Task 4 history (nullptr = not connected)
+    RequestLookup *requestLookup;        // Task 2 requests (nullptr = not connected)
 
     // Returns position of resource in the array, or -1 if not found
     int findIndex(string id) {
@@ -87,11 +88,12 @@ private:
     }
 
 public:
-    ResourceModule(ParcelModule &p) : parcels(p), activityLog(nullptr) {
+    ResourceModule(ParcelModule &p) : parcels(p), activityLog(nullptr), requestLookup(nullptr) {
         resourceCount = 0;
     }
 
     void setLog(ActivityLog *log) { activityLog = log; }
+    void setRequestLookup(RequestLookup *lookup) { requestLookup = lookup; }
 
     int total() { return resourceCount; }
 
@@ -247,6 +249,17 @@ public:
         if (requestId != "-" && (requestId[0] != 'R' || !isValidId(requestId))) {
             ui::error("Invalid Request ID (must start with R, e.g. R001).");
             return false;
+        }
+
+        // Walk-in job for a parcel that already has a Task 2 request: the
+        // request would be left behind, so the job must go through Task 2.
+        if (requestId == "-" && requestLookup) {
+            string active = requestLookup->activeRequestFor(parcelId);
+            if (active != "-") {
+                ui::error("Parcel " + parcelId + " already has service request " + active +
+                          ". Process it from Requests (Task 2) instead.");
+                return false;
+            }
         }
 
         // Duplicate active assignment check

@@ -46,6 +46,7 @@ int main() {
     RequestModule requests(parcels, resources);
     requests.loadFromFile(REQUEST_FILE);
     requests.setLog(&activities);
+    resources.setRequestLookup(&requests);   // Task 3 checks Task 2 before walk-in jobs
 
     ui::clearScreen();
     while (true) {

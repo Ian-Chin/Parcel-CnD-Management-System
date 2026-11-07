@@ -1,7 +1,7 @@
 # ParcelID,RecipientID,RecipientName,Company,Type(1-5),Arrival,Status(1-9),Seq
 # Type: 1=Standard 2=Large 3=Fragile 4=Document 5=Special-Handling
 # Status: 1=Received 2=Pending 3=Processing 4=Ready 5=OutForDelivery 6=Collected 7=Returned 8=Missing 9=Cancelled
-P006,TP071006,Muhammad Haziq,Pos Laju,4,2026-11-03 11:35:00,4,6
+P006,TP071006,Muhammad Haziq,Pos Laju,4,2026-11-03 11:35:00,6,6
 P003,TP071003,Lim Wei Jie,Shopee Xpress,3,2026-11-02 13:14:00,4,3
 P009,TP071009,Daniel Raj,Shopee Xpress,3,2026-11-04 09:56:00,1,9
 P001,TP071001,Ahmad Faiz,Pos Laju,1,2026-11-02 09:00:00,6,1

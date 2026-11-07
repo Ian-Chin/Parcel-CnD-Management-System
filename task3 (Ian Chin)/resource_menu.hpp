@@ -106,16 +106,15 @@ void doAssign(ResourceModule &m, ParcelModule &parcels) {
     heading("ASSIGN A PARCEL");
     parcels.displayAll();
     cout << "\n";
+    ui::info("Walk-in jobs only. Parcels with a service request are assigned from Requests (Task 2).");
     string parcelId = readId("Parcel ID (0 to cancel)");
     if (cancelled(parcelId)) return;
-    string requestId = readId("Request ID (Enter to skip, 0 to cancel)");
-    if (requestId == "0") { backedOut = true; return; }
     cout << "\n    1 Collection   2 Delivery   3 Special Handling\n"
          << "    4 Return       5 Re-delivery\n\n";
     int service = readInt("Service (0 to cancel)", 0, 5);
     if (cancelled(service)) return;
     cout << "\n";
-    m.assign(parcelId, requestId, (ServiceType)service);
+    m.assign(parcelId, "-", (ServiceType)service);
 }
 
 // One table plus the circular queue order (who gets the next job)

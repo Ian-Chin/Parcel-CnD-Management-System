@@ -6,7 +6,7 @@
 #include "request_list.hpp"
 using namespace std;
 
-class RequestModule {
+class RequestModule : public RequestLookup {
 private:
     RequestList pending;       // priority queue of requests waiting for a resource
     RequestList processing;    // requests a resource is handling now
@@ -98,6 +98,13 @@ public:
     }
 
     void setLog(ActivityLog* log) { activityLog = log; }
+
+    // For Task 3: ID of the Pending / Processing request for this parcel, or "-"
+    string activeRequestFor(string parcelId) {
+        Request* r = pending.findByParcel(parcelId);
+        if (r == NULL) r = processing.findByParcel(parcelId);
+        return r == NULL ? "-" : r->requestId;
+    }
 
     // 1. Creates a new Pending request after checking all the rules
     bool createRequest(string staffId, string parcelId, string recipientId, ServiceType service) {
