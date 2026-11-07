@@ -78,7 +78,7 @@ private:
 
 public:
     // Ensure the default parameter points to Task 1's file
-    CategoryModule(const string& file = "task1 (Isac Lim)/parcels.txt") : dataFile(file) {
+    CategoryModule(const string& file = "data/parcels.txt") : dataFile(file) {
         int n = tree.loadFromFile(dataFile);
         if (n > 0) cout << "  Loaded " << n << " parcel record(s) from Task 1 file into the BST.\n";
     }
@@ -210,5 +210,5 @@ public:
     }
 };
 
-inline void runCategoryModule(const std::string& file = "task1 (Isac Lim)/parcels.txt") { CategoryModule m(file); m.run(); }} // namespace task5
+inline void runCategoryModule(const std::string& file = "data/parcels.txt") { CategoryModule m(file); m.run(); }} // namespace task5
 #endif

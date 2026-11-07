@@ -1,6 +1,7 @@
 #pragma once
 #include <iostream>
 #include <string>
+#include <cstdlib>
 #include "parcel.hpp"
 
 namespace ui {
@@ -24,7 +25,15 @@ inline std::string center(const std::string& s, size_t w) {
     return std::string(left, ' ') + s;
 }
 
-inline void clearScreen() { std::cout << "\033[2J\033[H"; }
+// cls on Windows (the console may ignore ANSI codes), ANSI elsewhere
+inline void clearScreen() {
+    std::cout.flush();
+#ifdef _WIN32
+    std::system("cls");
+#else
+    std::cout << "\033[2J\033[H" << std::flush;
+#endif
+}
 
 inline void pause() {
     std::cout << "\n  Press Enter to continue...";

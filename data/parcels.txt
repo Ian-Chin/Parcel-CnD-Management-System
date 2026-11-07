@@ -1,0 +1,3 @@
+# ParcelID,RecipientID,RecipientName,Company,Type(1-5),Arrival,Status(1-9),Seq
+# Type: 1=Standard 2=Large 3=Fragile 4=Document 5=Special-Handling
+# Status: 1=Received 2=Pending 3=Processing 4=Ready 5=OutForDelivery 6=Collected 7=Returned 8=Missing 9=Cancelled

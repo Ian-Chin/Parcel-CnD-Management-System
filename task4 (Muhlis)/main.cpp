@@ -7,9 +7,9 @@ using namespace std;
 
 // Standalone Task 4 program. Task 1 and Task 3 are included because they are
 // the modules that create the activities Task 4 records and undoes.
-const string PARCEL_FILE   = "../task1 (Isac Lim)/parcels.txt";     // shared with Task 1
-const string RESOURCE_FILE = "../task3 (Ian Chin)/resources.txt";   // shared with Task 3
-const string ACTIVITY_FILE = "activities.txt";
+const string PARCEL_FILE   = "../data/parcels.txt";     // shared with Task 1
+const string RESOURCE_FILE = "../data/resources.txt";   // shared with Task 3
+const string ACTIVITY_FILE = "../data/activities.txt";
 
 int main() {
     ParcelModule parcels;

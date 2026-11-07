@@ -3,8 +3,8 @@
 #include "resource_menu.hpp"
 using namespace std;
 
-const string RESOURCE_FILE = "resources.txt";
-const string PARCEL_FILE = "../task1 (Isac Lim)/parcels.txt";   // shared with Task 1
+const string RESOURCE_FILE = "../data/resources.txt";
+const string PARCEL_FILE = "../data/parcels.txt";
 
 int main() {
     ParcelModule parcels;

@@ -2,7 +2,7 @@
 #include "parcel_menu.hpp"
 using namespace std;
 
-static const char* DATA_FILE = "parcels.txt";
+static const char* DATA_FILE = "../data/parcels.txt";
 
 int main() {
     ParcelModule module;

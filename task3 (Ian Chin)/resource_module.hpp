@@ -205,34 +205,20 @@ public:
         ui::tableLine(w, 6);
     }
 
-    // Grouped view: available / occupied / unavailable + maintenance
-    void displayAvailability() {
-        if (resourceCount == 0) { ui::info("No resources registered yet."); return; }
-
-        cout << "\n  AVAILABLE (" << countByStatus(AVAILABLE) << ")\n";
-        for (int i = 0; i < resourceCount; i++)
-            if (resources[i].status == AVAILABLE)
-                cout << "    " << resources[i].resourceId << "  " << resourceTypeToString(resources[i].type) << "\n";
-
-        cout << "\n  OCCUPIED (" << countByStatus(OCCUPIED) << ")\n";
+    // Busy resources only, with the job each one is handling
+    void displayOccupied() {
         for (int i = 0; i < resourceCount; i++)
             if (resources[i].status == OCCUPIED)
-                cout << "    " << resources[i].resourceId << "  " << resourceTypeToString(resources[i].type)
-                     << "  -> Parcel " << resources[i].parcelId
+                cout << "    " << ui::fit(resources[i].resourceId, 6)
+                     << "Parcel " << resources[i].parcelId
                      << ", Request " << resources[i].requestId
                      << " (" << serviceToString(resources[i].service) << ")\n";
-
-        cout << "\n  UNAVAILABLE / MAINTENANCE (" << countByStatus(UNAVAILABLE) + countByStatus(MAINTENANCE) << ")\n";
-        for (int i = 0; i < resourceCount; i++)
-            if (resources[i].status == UNAVAILABLE || resources[i].status == MAINTENANCE)
-                cout << "    " << resources[i].resourceId << "  " << resourceTypeToString(resources[i].type)
-                     << "  [" << resourceStatusToString(resources[i].status) << "]\n";
     }
 
     // Shows the circular queue order for each type (who gets the next job)
     void displayRotation() {
         for (int t = 1; t <= 4; t++) {
-            cout << "\n  " << resourceTypeToString((ResourceType)t) << ": ";
+            cout << "    " << ui::fit(resourceTypeToString((ResourceType)t), 26);
             if (rotation[t].isEmpty()) { cout << "(none)\n"; continue; }
             for (int i = 0; i < rotation[t].size(); i++) {
                 string id = rotation[t].getAt(i);
@@ -243,7 +229,7 @@ public:
             }
             cout << "\n";
         }
-        cout << "\n  The first Available resource from the front gets the next job.\n";
+        cout << "  The first Available one from the left gets the next job.\n";
     }
 
     // ---------- 3. Assign ----------

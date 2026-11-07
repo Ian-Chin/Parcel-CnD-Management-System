@@ -6,28 +6,23 @@
 #include "task5 (kerjinn)/category_module.hpp"
 using namespace std;
 
-const string PARCEL_FILE    = "task1 (Isac Lim)/parcels.txt";
-const string RESOURCE_FILE  = "task3 (Ian Chin)/resources.txt";
-const string CATEGORY_FILE  = "task1 (Isac Lim)/parcels.txt";
-const string ACTIVITY_FILE  = "task4 (Muhlis)/activities.txt";
+const string PARCEL_FILE    = "data/parcels.txt";
+const string RESOURCE_FILE  = "data/resources.txt";
+const string CATEGORY_FILE  = "data/parcels.txt";
+const string ACTIVITY_FILE  = "data/activities.txt";
 
 void showMainMenu(ParcelModule &parcels, ResourceModule &resources) {
-    ui::bigTitle("SMART CAMPUS PARCEL SYSTEM", "Integrated Prototype - Main Menu");
-    cout << "\n  Parcels: " << parcels.totalParcels()
-         << "  |  Pending: " << parcels.countByStatus(ParcelStatus::Pending)
-         << "  |  Ready: " << parcels.countByStatus(ParcelStatus::ReadyForCollection)
-         << "  |  Out for Delivery: " << parcels.countByStatus(ParcelStatus::OutForDelivery) << "\n"
-         << "  Resources: " << resources.total()
-         << "  |  Available: " << resources.countByStatus(AVAILABLE)
-         << "  |  Occupied: " << resources.countByStatus(OCCUPIED) << "\n";
-    cout << "\n  " << ui::repeat("-", ui::WIDTH) << "\n"
-         << "    [1]  Task 1 - Parcel Intake, Sorting & Processing\n"
-         << "    [2]  Task 2 - Service & Collection Requests     (coming soon)\n"
-         << "    [3]  Task 3 - Counter & Delivery Resources\n"
-         << "    [4]  Task 4 - Activity & Record History\n"
-         << "    [5]  Task 5 - Parcel Category Organisation\n"
-         << "\n    [0]  Exit (data is saved automatically)\n"
-         << "  " << ui::repeat("-", ui::WIDTH) << "\n\n";
+    cout << "\n  SMART CAMPUS PARCEL SYSTEM\n  " << ui::repeat("=", ui::WIDTH) << "\n"
+         << "  " << parcels.totalParcels() << " parcels ("
+         << parcels.countByStatus(ParcelStatus::Pending) << " pending)    "
+         << resources.total() << " resources ("
+         << resources.countByStatus(AVAILABLE) << " free)\n\n"
+         << "    1  Parcels      register, sort, process\n"
+         << "    2  Requests     not built yet\n"
+         << "    3  Resources    counters and delivery staff\n"
+         << "    4  History      activity log and undo\n"
+         << "    5  Categories   parcel search tree\n\n"
+         << "    0  Save and exit\n\n";
 }
 
 int main() {
@@ -48,22 +43,15 @@ int main() {
     ui::clearScreen();
     while (true) {
         showMainMenu(parcels, resources);
-        int choice = resource_menu::readInt("Choose a module", 0, 5);
+        int choice = resource_menu::readInt("Choose", 0, 5);
         if (choice == 0) break;
 
         ui::clearScreen();
-        if (choice == 1) {
-            parcel_menu::run(parcels, PARCEL_FILE);
-        } else if (choice == 3) {
-            resource_menu::run(resources, parcels, RESOURCE_FILE, PARCEL_FILE);
-        } else if (choice == 4) {
-            activity_menu::run(activities, parcels, resources, PARCEL_FILE, RESOURCE_FILE);
-        } else if (choice == 5) {
-            task5::runCategoryModule(CATEGORY_FILE);   // BST-based category organisation
-        } else {
-            ui::info("Task " + to_string(choice) + " has not been added to the integrated system yet.");
-            ui::pause();
-        }
+        if (choice == 1) parcel_menu::run(parcels, PARCEL_FILE);
+        else if (choice == 3) resource_menu::run(resources, parcels, RESOURCE_FILE, PARCEL_FILE);
+        else if (choice == 4) activity_menu::run(activities, parcels, resources, PARCEL_FILE, RESOURCE_FILE);
+        else if (choice == 5) task5::runCategoryModule(CATEGORY_FILE);   // BST-based category organisation
+        else { ui::info("Requests (Task 2) is not built yet."); ui::pause(); }
         ui::clearScreen();
     }
 
