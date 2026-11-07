@@ -1,0 +1,3 @@
+# RequestID,ParcelID,RecipientID,RecipientName,Service(1-5),RequestTime,Status(1-5),StaffID
+# Service: 1=Collection 2=Campus Delivery 3=Special Handling 4=Return to Sender 5=Re-delivery
+# Status: 1=Pending 2=Processing 3=Completed 4=Cancelled 5=Returned
