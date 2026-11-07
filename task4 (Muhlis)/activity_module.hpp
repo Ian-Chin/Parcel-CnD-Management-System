@@ -84,7 +84,8 @@ private:
         while (history.pop(a)) {
             temp.push(a);
             if (a->parcelId == parcelId && !a->reversed &&
-                a->type != ActivityType::Reversal && a->type != ActivityType::ParcelUpdate) {
+                a->type != ActivityType::Reversal && a->type != ActivityType::ParcelUpdate &&
+                a->type != ActivityType::ServiceRequestCreation) {
                 found = a;
                 break;
             }
@@ -103,10 +104,10 @@ private:
     }
 
     static void writeHeader(std::ofstream& out) {
-        out << "# ActivityID,ParcelID,RequestID,ResourceID,Type(1-16),DateTime,PrevStatus(0-9),NewStatus(1-9),Reversed(0/1),Reverses\n";
+        out << "# ActivityID,ParcelID,RequestID,ResourceID,Type(1-17),DateTime,PrevStatus(0-9),NewStatus(1-9),Reversed(0/1),Reverses\n";
         out << "# Type: 1=Registration 2=ParcelUpdate 3=Sorting 4=Processing 5=StatusChange 6=Removal 7=Assignment 8=JobCompleted\n";
         out << "#       9=JobCancelled 10=ResourceUnavailable 11=Reassignment 12=Cancellation 13=ReportedMissing\n";
-        out << "#       14=CollectionConfirmation 15=ReturnProcessing 16=Reversal\n";
+        out << "#       14=CollectionConfirmation 15=ReturnProcessing 16=Reversal 17=ServiceRequestCreation\n";
         out << "# Status: 0=none 1=Received 2=Pending 3=Processing 4=Ready 5=OutForDelivery 6=Collected 7=Returned 8=Missing 9=Cancelled\n";
     }
 
@@ -444,7 +445,7 @@ public:
             int number = (n == 10) ? idNumber(f[0]) : -1;
             if (n != 10 || number == -1 || f[1].empty() || f[2].empty() || f[3].empty() || f[5].empty() ||
                 !toInt(f[4], type) || !toInt(f[6], prev) || !toInt(f[7], now) || !toInt(f[8], rev) ||
-                type < 1 || type > 16 || prev > 9 || now < 1 || now > 9 || rev > 1 || f[9].empty()) {
+                type < 1 || type > 17 || prev > 9 || now < 1 || now > 9 || rev > 1 || f[9].empty()) {
                 ui::warn("Activity file line " + std::to_string(lineNo) + " is invalid - skipped.");
                 continue;
             }

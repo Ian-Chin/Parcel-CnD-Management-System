@@ -115,8 +115,7 @@ public:
         string id = makeId(nextNumber);
         nextNumber++;
         pending.insertSorted(newRequest(id, parcelId, recipientId, p->recipientName, service, currentDateTime(), RequestStatus::Pending, staffId));
-        //TODO change to ServiceRequestCreation when Task 4 adds it
-        if (activityLog != NULL) activityLog->record(ActivityType::ParcelUpdate, parcelId, id, "-", p->status, p->status);
+        if (activityLog != NULL) activityLog->record(ActivityType::ServiceRequestCreation, parcelId, id, "-", p->status, p->status);
         ui::success("Request " + id + " created (" + serviceToString(service) + "), status Pending.");
         return true;
     }

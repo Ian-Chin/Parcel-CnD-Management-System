@@ -22,7 +22,9 @@ enum class ActivityType {
     ReportedMissing,
     CollectionConfirmation,
     ReturnProcessing,
-    Reversal
+    Reversal,
+    // Reported by Task 2 (kept last so saved type numbers do not shift)
+    ServiceRequestCreation
 };
 
 // Connector between the task modules and the Task 4 history.

@@ -34,6 +34,7 @@ inline std::string activityTypeToString(ActivityType t) {
         case ActivityType::CollectionConfirmation: return "Collection Confirmation";
         case ActivityType::ReturnProcessing:       return "Return Processing";
         case ActivityType::Reversal:               return "Reversal (Undo)";
+        case ActivityType::ServiceRequestCreation: return "Service Request Creation";
     }
     return "Unknown";
 }
@@ -58,6 +59,7 @@ inline std::string whyNotReversible(ActivityType t) {
         case ActivityType::ResourceUnavailable:
         case ActivityType::Reassignment:           return "it was done automatically by the system.";
         case ActivityType::Reversal:               return "an undo cannot itself be undone.";
+        case ActivityType::ServiceRequestCreation: return "a service request is cancelled in Task 2 (option 8), not undone here.";
         default:                                   return "this activity type cannot be undone.";
     }
 }
