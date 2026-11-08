@@ -72,8 +72,32 @@ private:
              << "  Staff ID     : " << r->staffId << "\n";
     }
 
+    // True if the request's parcel was removed or is already finished
+    // (Collected, Returned, Missing, Cancelled), so the request can never run.
+    bool parcelFinished(Request* r) {
+        Parcel* p = parcels.findParcel(r->parcelId);
+        return p == NULL || isTerminalStatus(p->status);
+    }
+
+    // Closes a Pending request whose parcel is finished, so it stops blocking the queue.
+    // Collection of a Collected parcel / Return of a Returned parcel already happened,
+    // so those count as done; anything else is Cancelled and recorded in Task 4.
+    void closeFinished(Request* r) {
+        Parcel* p = parcels.findParcel(r->parcelId);
+        pending.removeById(r->requestId);
+        if (p != NULL && p->status == ParcelStatus::Collected && r->service == RECIPIENT_COLLECTION) r->status = RequestStatus::Completed;
+        else if (p != NULL && p->status == ParcelStatus::Returned && r->service == RETURN_TO_SENDER) r->status = RequestStatus::Returned;
+        else r->status = RequestStatus::Cancelled;
+        history.insertEnd(r);
+        if (activityLog != NULL && p != NULL && r->status == RequestStatus::Cancelled)
+            activityLog->record(ActivityType::RequestCancelled, r->parcelId, r->requestId, "-", p->status, p->status);
+        string why = (p == NULL) ? "no longer exists" : "is already " + statusToString(p->status);
+        ui::warn("Parcel " + r->parcelId + " " + why + ". Request " + r->requestId + " closed as " + requestStatusToString(r->status) + ".");
+    }
+
     // Asks Task 3 for a resource; on success moves the request to processing
     bool startRequest(Request* r) {
+        if (parcelFinished(r)) { closeFinished(r); return false; }
         if (!resources.assign(r->parcelId, r->requestId, r->service)) {
             ui::info("Request " + r->requestId + " stays Pending. Try again later.");
             return false;
@@ -181,6 +205,8 @@ public:
 
     // 5. Processes the request at the front of the priority queue
     bool processNext() {
+        // Requests whose parcel is already finished are closed and skipped
+        while (!pending.isEmpty() && parcelFinished(pending.first())) closeFinished(pending.first());
         if (pending.isEmpty()) { ui::error("No pending requests. The queue is empty."); return false; }
         return startRequest(pending.first());
     }
@@ -281,8 +307,13 @@ public:
             int status = atoi(f[6].c_str());
             if (n != 7 || f[0].length() < 2 || f[0][0] != 'R' || service < 1 || service > 5 || status < 1 || status > 5) { ui::warn("Skipped bad line: " + line); continue; }
             if (findAnywhere(f[0]) != NULL) { ui::warn("Skipped duplicate request: " + f[0]); continue; }
-
             Request* r = newRequest(f[0], f[1], f[2], f[3], (ServiceType)service, f[5], (RequestStatus)status, f[7]);
+            // An active request whose parcel no longer exists can never run: keep it as Cancelled.
+            // Finished requests stay as they are - they are history even if the parcel was removed.
+            if ((r->status == RequestStatus::Pending || r->status == RequestStatus::Processing) && parcels.findParcel(r->parcelId) == NULL) {
+                ui::warn("Request " + r->requestId + ": parcel " + r->parcelId + " not found - marked Cancelled.");
+                r->status = RequestStatus::Cancelled;
+            }
             if (r->status == RequestStatus::Pending) pending.insertSorted(r);
             else if (r->status == RequestStatus::Processing) processing.insertEnd(r);
             else history.insertEnd(r);
