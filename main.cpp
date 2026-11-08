@@ -43,6 +43,10 @@ int main() {
     requests.loadFromFile(REQUEST_FILE);
     requests.setLog(&activities);
     resources.setRequestLookup(&requests);
+    activities.setRequestLink(&requests);              // Task 4 undo can put a request back
+
+    std::cout << "\n";
+    activities.setStaff(activity_menu::askStaffId());  // stamped on every activity
 
     ui::clearScreen();
     while (true) {
@@ -54,7 +58,7 @@ int main() {
         if (choice == 1) parcel_menu::run(parcels, PARCEL_FILE);
         else if (choice == 2) request_menu::run(requests, parcels, resources, REQUEST_FILE, PARCEL_FILE, RESOURCE_FILE);
         else if (choice == 3) resource_menu::run(resources, parcels, RESOURCE_FILE, PARCEL_FILE);
-        else if (choice == 4) activity_menu::run(activities, parcels, resources, PARCEL_FILE, RESOURCE_FILE);
+        else if (choice == 4) activity_menu::run(activities, parcels, resources, PARCEL_FILE, RESOURCE_FILE, REQUEST_FILE);
         else if (choice == 5) {
             parcels.saveToFile(PARCEL_FILE);                 // write Task 1's latest data first
             task5::runCategoryModule(CATEGORY_FILE);         // Task 5 edits data/parcels.txt, saves on 0

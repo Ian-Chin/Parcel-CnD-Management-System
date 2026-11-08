@@ -15,15 +15,18 @@
 //   temp      - local stack used to walk the history. Popping history onto
 //               temp reverses the order, which gives oldest-first output.
 //
-// Task 1 and Task 3 report activities through record() (ActivityLog connector).
+// Task 1, Task 2 and Task 3 report activities through record() (ActivityLog
+// connector). Undo reaches the Task 2 requests through RequestLink.
 class ActivityModule : public ActivityLog {
 private:
     Stack<Activity*> history;
     Stack<Activity*> undoStack;
     ParcelModule&    parcels;
     ResourceModule&  resources;
+    RequestLink*     requests;     // Task 2 (nullptr = not connected)
     int              nextNumber;   // number used for the next Activity ID
     std::string      filePath;     // activities.txt
+    std::string      staff;        // staff ID entered at startup ("-" = none)
 
     // ---------- helpers ----------
 
@@ -85,7 +88,8 @@ private:
             temp.push(a);
             if (a->parcelId == parcelId && !a->reversed &&
                 a->type != ActivityType::Reversal && a->type != ActivityType::ParcelUpdate &&
-                a->type != ActivityType::ServiceRequestCreation) {
+                a->type != ActivityType::ServiceRequestCreation &&
+                a->type != ActivityType::RequestCancelled) {
                 found = a;
                 break;
             }
@@ -100,14 +104,14 @@ private:
         return a.activityId + "," + a.parcelId + "," + a.requestId + "," + a.resourceId + "," +
                std::to_string(static_cast<int>(a.type)) + "," + a.dateTime + "," +
                std::to_string(a.prevStatus) + "," + std::to_string(a.newStatus) + "," +
-               (a.reversed ? "1" : "0") + "," + a.reverses;
+               (a.reversed ? "1" : "0") + "," + a.reverses + "," + a.staffId;
     }
 
     static void writeHeader(std::ofstream& out) {
-        out << "# ActivityID,ParcelID,RequestID,ResourceID,Type(1-17),DateTime,PrevStatus(0-9),NewStatus(1-9),Reversed(0/1),Reverses\n";
+        out << "# ActivityID,ParcelID,RequestID,ResourceID,Type(1-18),DateTime,PrevStatus(0-9),NewStatus(1-9),Reversed(0/1),Reverses,StaffID\n";
         out << "# Type: 1=Registration 2=ParcelUpdate 3=Sorting 4=Processing 5=StatusChange 6=Removal 7=Assignment 8=JobCompleted\n";
         out << "#       9=JobCancelled 10=ResourceUnavailable 11=Reassignment 12=Cancellation 13=ReportedMissing\n";
-        out << "#       14=CollectionConfirmation 15=ReturnProcessing 16=Reversal 17=ServiceRequestCreation\n";
+        out << "#       14=CollectionConfirmation 15=ReturnProcessing 16=Reversal 17=ServiceRequestCreation 18=RequestCancelled\n";
         out << "# Status: 0=none 1=Received 2=Pending 3=Processing 4=Ready 5=OutForDelivery 6=Collected 7=Returned 8=Missing 9=Cancelled\n";
     }
 
@@ -154,15 +158,17 @@ private:
 
     // ---------- table output ----------
 
+    static const int COLS = 9;
+
     static void tableHeader(const int w[], bool trace) {
-        ui::tableLine(w, 8);
+        ui::tableLine(w, COLS);
         ui::rowOpen();
         if (trace) { ui::cell("Step", w[0]); ui::cell("ID", w[1]); ui::cell("Date/Time", w[2]); }
         else       { ui::cell("ID", w[0]);   ui::cell("Date/Time", w[1]); ui::cell("Parcel", w[2]); }
         ui::cell("Activity", w[3]); ui::cell("From", w[4]); ui::cell("To", w[5]);
-        ui::cell("Request", w[6]);  ui::cell("Resource", w[7]);
+        ui::cell("Request", w[6]);  ui::cell("Resource", w[7]); ui::cell("Staff", w[8]);
         ui::rowClose();
-        ui::tableLine(w, 8);
+        ui::tableLine(w, COLS);
     }
 
     static void tableRow(const int w[], const Activity* a, int step) {
@@ -175,11 +181,21 @@ private:
         ui::cell(shortStatus(a->newStatus), w[5]);
         ui::cell(a->requestId, w[6]);
         ui::cell(a->resourceId, w[7]);
+        ui::cell(a->staffId, w[8]);
         ui::rowClose();
     }
 
 public:
-    ActivityModule(ParcelModule& p, ResourceModule& r) : parcels(p), resources(r), nextNumber(1) {}
+    ActivityModule(ParcelModule& p, ResourceModule& r)
+        : parcels(p), resources(r), requests(nullptr), nextNumber(1), staff("-") {}
+
+    void setRequestLink(RequestLink* r) { requests = r; }
+    RequestLink* requestLink() const { return requests; }
+
+    // Staff ID entered at startup. Used for every activity that does not
+    // bring its own (Task 1, Task 3 and undo).
+    void setStaff(const std::string& id) { staff = id.empty() ? "-" : id; }
+    const std::string& currentStaff() const { return staff; }
 
     ~ActivityModule() {
         Activity* a;
@@ -191,11 +207,12 @@ public:
     bool isEmpty() const { return history.isEmpty(); }
     int  total() const { return history.size(); }
 
-    // ---------- 1. Record (called by Task 1 / Task 3) ----------
+    // ---------- 1. Record (called by Task 1 / Task 2 / Task 3) ----------
 
     void record(ActivityType type, const std::string& parcelId,
                 const std::string& requestId, const std::string& resourceId,
-                ParcelStatus oldStatus, ParcelStatus newStatus) override {
+                ParcelStatus oldStatus, ParcelStatus newStatus,
+                const std::string& staffId = "-") override {
         Activity* a = new Activity;
         a->activityId = makeId();
         a->parcelId   = parcelId;
@@ -207,6 +224,7 @@ public:
         a->newStatus  = static_cast<int>(newStatus);
         a->reversed   = false;
         a->reverses   = "-";
+        a->staffId    = (staffId.empty() || staffId == "-") ? staff : staffId;
         add(a);
         appendToFile(*a);
     }
@@ -216,7 +234,7 @@ public:
     // Most recent first: pop from history until k activities are shown.
     void displayRecent(int k) {
         if (isEmpty()) { ui::info("No activity history yet."); return; }
-        const int w[8] = { 6, 19, 9, 23, 16, 16, 7, 8 };
+        const int w[COLS] = { 6, 19, 9, 23, 16, 16, 7, 8, 5 };
         tableHeader(w, false);
         Stack<Activity*> temp;
         Activity* a;
@@ -227,7 +245,7 @@ public:
             ++shown;
         }
         restoreFromTemp(temp);
-        ui::tableLine(w, 8);
+        ui::tableLine(w, COLS);
         std::cout << "  Showing the " << shown << " most recent of " << total()
                   << " activities (newest first).  * = undone\n";
     }
@@ -235,7 +253,7 @@ public:
     // Oldest first, so the table shows the order in which things happened.
     void displayAll() {
         if (isEmpty()) { ui::info("No activity history yet."); return; }
-        const int w[8] = { 6, 19, 9, 23, 16, 16, 7, 8 };
+        const int w[COLS] = { 6, 19, 9, 23, 16, 16, 7, 8, 5 };
         tableHeader(w, false);
         Stack<Activity*> temp;
         moveAllToTemp(temp);                 // temp top = oldest
@@ -244,7 +262,7 @@ public:
             tableRow(w, a, 0);
             history.push(a);                 // rebuilds history, newest on top again
         }
-        ui::tableLine(w, 8);
+        ui::tableLine(w, COLS);
         std::cout << "  Total: " << total() << " activities (oldest first).  * = undone\n";
     }
 
@@ -254,7 +272,7 @@ public:
         if (isEmpty()) { ui::info("No activity history yet."); return; }
         Parcel* p = parcels.findParcel(parcelId);
 
-        const int w[8] = { 4, 6, 19, 23, 16, 16, 7, 8 };
+        const int w[COLS] = { 4, 6, 19, 23, 16, 16, 7, 8, 5 };
         Stack<Activity*> temp;
         moveAllToTemp(temp);                 // temp top = oldest
         Activity* a;
@@ -279,7 +297,7 @@ public:
             else    ui::info("No activities recorded for parcel " + parcelId + " yet (status: " + statusToString(p->status) + ").");
             return;
         }
-        ui::tableLine(w, 8);
+        ui::tableLine(w, COLS);
         std::cout << "  Steps          : " << steps << " (" << undone << " undone)  * = undone\n"
                   << "  Most recent    : " << last->activityId << " " << activityName(last)
                   << " at " << last->dateTime << "\n"
@@ -304,6 +322,7 @@ public:
                   << "  Status         : " << statusLabel(a->prevStatus) << "  ->  " << statusLabel(a->newStatus) << "\n"
                   << "  Request ID     : " << a->requestId << "\n"
                   << "  Resource ID    : " << a->resourceId << "\n"
+                  << "  Staff ID       : " << a->staffId << "\n"
                   << "  Undone         : " << (a->reversed ? "Yes" : "No") << "\n"
                   << "  " << ui::repeat("-", ui::WIDTH) << "\n";
     }
@@ -358,6 +377,13 @@ public:
         if (a->type == ActivityType::Assignment) {
             if (holder != a->resourceId)
                 return "resource " + a->resourceId + " is no longer handling parcel " + a->parcelId + ".";
+            // Assignment made for a Task 2 request: the request must go back too.
+            if (a->requestId != "-") {
+                if (!requests)
+                    return "request " + a->requestId + " cannot be updated because Task 2 is not connected.";
+                if (!requests->isProcessing(a->requestId))
+                    return "request " + a->requestId + " is no longer Processing.";
+            }
         } else if (holder != "-" && (a->prevStatus == static_cast<int>(ParcelStatus::Received) ||
                                      a->prevStatus == static_cast<int>(ParcelStatus::Pending))) {
             return "parcel " + a->parcelId + " is still held by resource " + holder + ", so it cannot go back to '" +
@@ -366,9 +392,10 @@ public:
         return "";
     }
 
-    // Reverses the activity: frees the resource for an assignment, restores the
-    // previous parcel status, puts the parcel back in its queue if needed and
-    // records the undo. Eligibility is checked again here before anything changes.
+    // Reverses the activity: frees the resource for an assignment (and puts its
+    // Task 2 request back to Pending), restores the previous parcel status, puts
+    // the parcel back in its queue if needed and records the undo. Eligibility
+    // is checked again here before anything changes.
     bool undo(Activity* a) {
         std::string reason = checkUndo(a);
         if (!reason.empty()) { ui::error(a->activityId + " cannot be undone: " + reason); return false; }
@@ -383,6 +410,9 @@ public:
                 return false;
             }
             ui::success("Resource " + a->resourceId + " released and Available again.");
+            // checkUndo() confirmed the request is Processing, so this succeeds.
+            if (a->requestId != "-" && requests->backToPending(a->requestId))
+                ui::success("Request " + a->requestId + " is back to Pending.");
         }
 
         p->status = restore;
@@ -400,6 +430,7 @@ public:
         r->newStatus  = static_cast<int>(restore);
         r->reversed   = false;
         r->reverses   = a->activityId;
+        r->staffId    = staff;
         history.push(r);
         saveToFile();                   // rewrite: the undone flag of an old line changed
 
@@ -428,6 +459,8 @@ public:
     }
 
     // Reads activities oldest first and pushes them, so the newest ends on top.
+    // Lines have 11 fields (with Staff ID). Older 10-field lines are still
+    // accepted and get Staff ID "-".
     int loadFromFile(const std::string& path) {
         filePath = path;
         std::ifstream in(path.c_str());
@@ -439,13 +472,14 @@ public:
             if (!line.empty() && line[line.size() - 1] == '\r') line.erase(line.size() - 1);
             if (line.empty() || line[0] == '#') continue;
 
-            std::string f[11];
-            int n = splitFields(line, f, 11);
+            std::string f[12];
+            int n = splitFields(line, f, 12);   // 12 = room to spot a line with too many fields
+            if (n == 10) f[10] = "-";           // old line without Staff ID
             int type = 0, prev = 0, now = 0, rev = 0;
-            int number = (n == 10) ? idNumber(f[0]) : -1;
-            if (n != 10 || number == -1 || f[1].empty() || f[2].empty() || f[3].empty() || f[5].empty() ||
+            int number = (n == 10 || n == 11) ? idNumber(f[0]) : -1;
+            if (number == -1 || f[1].empty() || f[2].empty() || f[3].empty() || f[5].empty() ||
                 !toInt(f[4], type) || !toInt(f[6], prev) || !toInt(f[7], now) || !toInt(f[8], rev) ||
-                type < 1 || type > 17 || prev > 9 || now < 1 || now > 9 || rev > 1 || f[9].empty()) {
+                type < 1 || type > 18 || prev > 9 || now < 1 || now > 9 || rev > 1 || f[9].empty() || f[10].empty()) {
                 ui::warn("Activity file line " + std::to_string(lineNo) + " is invalid - skipped.");
                 continue;
             }
@@ -457,6 +491,7 @@ public:
             a->activityId = f[0]; a->parcelId = f[1]; a->requestId = f[2]; a->resourceId = f[3];
             a->type = static_cast<ActivityType>(type); a->dateTime = f[5];
             a->prevStatus = prev; a->newStatus = now; a->reversed = (rev == 1); a->reverses = f[9];
+            a->staffId = f[10];
             add(a);
             lastNumber = number;
             ++loaded;

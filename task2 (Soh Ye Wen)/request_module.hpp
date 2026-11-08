@@ -6,7 +6,7 @@
 #include "request_list.hpp"
 using namespace std;
 
-class RequestModule : public RequestLookup {
+class RequestModule : public RequestLookup, public RequestLink {
 private:
     RequestList pending;       // priority queue of requests waiting for a resource
     RequestList processing;    // requests a resource is handling now
@@ -106,6 +106,18 @@ public:
         return r == NULL ? "-" : r->requestId;
     }
 
+    // For Task 4 undo: is this request being handled by a resource now?
+    bool isProcessing(string id) { return processing.findById(id) != NULL; }
+
+    // For Task 4 undo: the resource was taken back, so the request waits again
+    bool backToPending(string id) {
+        Request* r = processing.removeById(id);
+        if (r == NULL) return false;
+        r->status = RequestStatus::Pending;
+        pending.insertSorted(r);
+        return true;
+    }
+
     // 1. Creates a new Pending request after checking all the rules
     bool createRequest(string staffId, string parcelId, string recipientId, ServiceType service) {
         if (staffId == "" || parcelId == "" || recipientId == "") { ui::error("Staff ID, Parcel ID and Recipient ID are all required."); return false; }
@@ -122,7 +134,7 @@ public:
         string id = makeId(nextNumber);
         nextNumber++;
         pending.insertSorted(newRequest(id, parcelId, recipientId, p->recipientName, service, currentDateTime(), RequestStatus::Pending, staffId));
-        if (activityLog != NULL) activityLog->record(ActivityType::ServiceRequestCreation, parcelId, id, "-", p->status, p->status);
+        if (activityLog != NULL) activityLog->record(ActivityType::ServiceRequestCreation, parcelId, id, "-", p->status, p->status, staffId);
         ui::success("Request " + id + " created (" + serviceToString(service) + "), status Pending.");
         return true;
     }
@@ -211,6 +223,8 @@ public:
         }
         r->status = RequestStatus::Cancelled;
         history.insertEnd(r);
+        Parcel* p = parcels.findParcel(r->parcelId);
+        if (activityLog != NULL && p != NULL) activityLog->record(ActivityType::RequestCancelled, r->parcelId, id, "-", p->status, p->status);
         ui::success("Request " + id + " cancelled.");
         return true;
     }

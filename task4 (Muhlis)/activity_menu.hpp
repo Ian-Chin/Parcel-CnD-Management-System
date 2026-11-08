@@ -51,9 +51,22 @@ static bool isValidParcelId(const std::string& s) {
     return true;
 }
 
+// Asked once when the program starts. Every activity recorded in this run is
+// stamped with it (Task 2 requests use their own Staff ID instead).
+// Same idea as a Task 2 Staff ID: 2-10 letters/digits, e.g. ST01.
+inline std::string askStaffId() {
+    while (true) {
+        std::string s = readId("Staff ID (e.g. ST01)");
+        bool ok = s.size() >= 2 && s.size() <= 10;
+        for (size_t i = 0; i < s.size() && ok; ++i) ok = isalnum(static_cast<unsigned char>(s[i])) != 0;
+        if (ok) return s;
+        ui::error("Staff ID must be 2-10 letters/digits, no spaces.");
+    }
+}
+
 static void showMenu(ActivityModule& m) {
     ui::bigTitle("SMART CAMPUS PARCEL SYSTEM", "Task 4 - Activity & Record History");
-    std::cout << "\n  Activities recorded: " << m.total() << "\n";
+    std::cout << "\n  Activities recorded: " << m.total() << "   |   Staff: " << m.currentStaff() << "\n";
     std::cout << "\n  " << ui::repeat("-", ui::WIDTH) << "\n"
               << "   HISTORY\n"
               << "    [1]  Recent activities        (newest first)\n"
@@ -112,10 +125,11 @@ static bool doUndoById(ActivityModule& m) {
     return m.undo(a);
 }
 
-// Runs the Task 4 menu until the user picks [0]. An undo changes parcels and
-// resources too, so both of their files are saved after it.
+// Runs the Task 4 menu until the user picks [0]. An undo can change parcels,
+// resources and requests too, so their files are saved after it.
 inline void run(ActivityModule& module, ParcelModule& parcels, ResourceModule& resources,
-                const std::string& parcelFile, const std::string& resourceFile) {
+                const std::string& parcelFile, const std::string& resourceFile,
+                const std::string& requestFile) {
     while (true) {
         showMenu(module);
         int c = readInt("Choose an option", 0, 5);
@@ -131,6 +145,7 @@ inline void run(ActivityModule& module, ParcelModule& parcels, ResourceModule& r
         if (changed) {
             parcels.saveToFile(parcelFile);
             resources.saveToFile(resourceFile);
+            if (module.requestLink()) module.requestLink()->saveToFile(requestFile);
         }
         ui::pause();
         ui::clearScreen();

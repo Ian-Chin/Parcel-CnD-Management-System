@@ -14,6 +14,7 @@ struct Activity {
     int          newStatus;    // ParcelStatus as a number
     bool         reversed;     // true once this activity has been undone
     std::string  reverses;     // Reversal records only: ID of the activity undone, else "-"
+    std::string  staffId;      // staff who did it, "-" if unknown (old records)
 };
 
 inline std::string activityTypeToString(ActivityType t) {
@@ -35,6 +36,7 @@ inline std::string activityTypeToString(ActivityType t) {
         case ActivityType::ReturnProcessing:       return "Return Processing";
         case ActivityType::Reversal:               return "Reversal (Undo)";
         case ActivityType::ServiceRequestCreation: return "Service Request Creation";
+        case ActivityType::RequestCancelled:       return "Request Cancelled";
     }
     return "Unknown";
 }
@@ -60,6 +62,7 @@ inline std::string whyNotReversible(ActivityType t) {
         case ActivityType::Reassignment:           return "it was done automatically by the system.";
         case ActivityType::Reversal:               return "an undo cannot itself be undone.";
         case ActivityType::ServiceRequestCreation: return "a service request is cancelled in Task 2 (option 8), not undone here.";
+        case ActivityType::RequestCancelled:       return "a cancelled request cannot be undone - create a new request in Task 2.";
         default:                                   return "this activity type cannot be undone.";
     }
 }
