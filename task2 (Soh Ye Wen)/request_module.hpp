@@ -233,6 +233,7 @@ public:
         }
         string rid = resources.resourceHolding(r->parcelId);
         Parcel* p = parcels.findParcel(r->parcelId);
+        if (p == NULL) { ui::error("Parcel " + r->parcelId + " not found, so request " + id + " cannot be finished. Cancel it instead."); return false; }
         if (rid != "-") {
             resources.completeJob(rid);   // Task 3 updates the parcel status
             if (r->service == RETURN_TO_SENDER) r->status = RequestStatus::Returned;
@@ -310,9 +311,13 @@ public:
             Request* r = newRequest(f[0], f[1], f[2], f[3], (ServiceType)service, f[5], (RequestStatus)status, f[7]);
             // An active request whose parcel no longer exists can never run: keep it as Cancelled.
             // Finished requests stay as they are - they are history even if the parcel was removed.
+            // If a resource still holds the parcel, leave it active so cancelling it frees the resource.
             if ((r->status == RequestStatus::Pending || r->status == RequestStatus::Processing) && parcels.findParcel(r->parcelId) == NULL) {
-                ui::warn("Request " + r->requestId + ": parcel " + r->parcelId + " not found - marked Cancelled.");
-                r->status = RequestStatus::Cancelled;
+                if (resources.resourceHolding(r->parcelId) == "-") {
+                    ui::warn("Request " + r->requestId + ": parcel " + r->parcelId + " not found - marked Cancelled.");
+                    r->status = RequestStatus::Cancelled;
+                }
+                else ui::warn("Request " + r->requestId + ": parcel " + r->parcelId + " not found - cancel this request to free its resource.");
             }
             if (r->status == RequestStatus::Pending) pending.insertSorted(r);
             else if (r->status == RequestStatus::Processing) processing.insertEnd(r);
