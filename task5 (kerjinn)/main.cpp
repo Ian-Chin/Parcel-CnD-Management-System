@@ -1,7 +1,7 @@
+// main.cpp - Task 5 (kerjinn) standalone launcher
 #include "category_module.hpp"
 
 int main() {
-    // Point directly to Task 1's file from the root folder
-    task5::runCategoryModule("../data/parcels.txt");
+    task5::runCategoryModule("data/parcels.txt");   // writes the shared parcel file immediately
     return 0;
 }

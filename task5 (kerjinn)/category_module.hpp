@@ -1,27 +1,27 @@
 // category_module.hpp - Task 5 (kerjinn)
 #ifndef CATEGORY_MODULE_HPP
 #define CATEGORY_MODULE_HPP
-#include "parcel_bst.hpp"
+#include "parcel_tree.hpp"
 
 namespace task5 {
 
-static const char* CATEGORIES[] = {"Standard Parcel", "Large Parcel", "Fragile Parcel", "Document", "Special Handling"};
-static const char* SERVICES[]   = {"Recipient Collection", "Campus Delivery", "Special Handling", "Return to Sender", "Re-delivery"};
-static const char* STATUSES[]   = {"Received", "Pending", "Processing", "Ready for Collection", "Out for Delivery", "Collected", "Returned", "Missing", "Cancelled"};
-
-inline string trim(const string& s) {
-    size_t a = s.find_first_not_of(" \t\r\n");
-    if (a == string::npos) return "";
-    return s.substr(a, s.find_last_not_of(" \t\r\n") - a + 1);
-}
 inline string readLine(const string& prompt) {
     string s; cout << prompt; getline(cin, s); return trim(s);
 }
-inline string toUpper(string s) { for (size_t i = 0; i < s.size(); i++) s[i] = toupper((unsigned char)s[i]); return s; }
 
-inline bool validId(const string& s) {
-    if (s.size() < 2 || s.size() > 10) return false;
+// Parcel ID: 3 to 12 letters/digits
+inline bool validParcelId(const string& s) {
+    if (s.size() < 3 || s.size() > 12) return false;
     for (size_t i = 0; i < s.size(); i++) if (!isalnum((unsigned char)s[i])) return false;
+    return true;
+}
+// Recipient ID: 2 letters + 6 digits, e.g. TP012345
+inline bool validRecipientId(const string& s) {
+    if (s.size() != 8) return false;
+    for (size_t i = 0; i < 8; i++) {
+        if (i < 2 && !isalpha((unsigned char)s[i])) return false;
+        if (i >= 2 && !isdigit((unsigned char)s[i])) return false;
+    }
     return true;
 }
 inline bool validText(const string& s) {
@@ -33,182 +33,278 @@ inline bool validName(const string& s) {
         if (!isalpha((unsigned char)s[i]) && s[i] != ' ' && s[i] != '\'' && s[i] != '.' && s[i] != '-' && s[i] != '/') return false;
     return true;
 }
+
+// Numbered list; returns chosen item or "" if invalid. If 'current' is given, Enter keeps it.
 template <size_t N>
-string pickFromList(const char* (&list)[N], const string& title) {
+string pickFromList(const char* const (&list)[N], const string& title, const string& current = "") {
     cout << "    " << title << ":\n";
     for (size_t i = 0; i < N; i++) cout << "      [" << i + 1 << "] " << list[i] << "\n";
-    string in = readLine("    Choose: ");
+    string in = readLine(current.empty() ? string("    Choose: ")
+                                         : "    Choose (Enter = keep \"" + current + "\"): ");
+    if (in.empty() && !current.empty()) return current;
     if (in.size() == 1 && in[0] >= '1' && in[0] < char('1' + N)) return list[in[0] - '1'];
     return "";
 }
 
 class CategoryModule {
 private:
-    ParcelBST tree;
-    string dataFile;
+    ParcelTree tree;      // "records" held in memory
+    string dataFile;      // data/parcels.txt
 
-    void pause() { readLine("\n  Press Enter to continue..."); }
-    void save()  { tree.saveToFile(dataFile); }
     bool requireData() {
-        if (tree.isEmpty()) { cout << "  [!] The parcel organisation structure is empty.\n"; return false; }
+        if (tree.isEmpty()) {
+            cout << "  [!] There are no records loaded. Use Insert > Import from " << dataFile << " first.\n";
+            return false;
+        }
         return true;
     }
+    void fileError() { cout << "  [!] Could not write to " << dataFile << " (check the path).\n"; }
 
-    bool inputParcel(CategoryParcel& p, bool newRecord) {
-        if (newRecord) {
-            p.parcelId = toUpper(readLine("    Parcel ID (e.g. P011): "));
-            if (!validId(p.parcelId)) { cout << "  [!] Invalid Parcel ID (2-10 letters/digits).\n"; return false; }
-            if (tree.search(p.parcelId)) { cout << "  [!] Duplicate Parcel ID: " << p.parcelId << " already exists.\n"; return false; }
+    // ---------- 1. manual insert: records + file ----------
+    void insertManual() {
+        cout << "\n  --- Enter a New Record Manually ---\n";
+        CategoryParcel p;
+        p.parcelId = toUpper(readLine("    Parcel ID (e.g. P011): "));
+        if (!validParcelId(p.parcelId)) { cout << "  [!] Invalid Parcel ID (must be 3-12 letters/digits).\n"; return; }
+        CategoryParcel tmp;
+        if (tree.search(p.parcelId)) { cout << "  [!] Parcel ID " << p.parcelId << " already exists in the records.\n"; return; }
+        if (ParcelTree::findInFile(dataFile, p.parcelId, tmp)) {
+            cout << "  [!] Parcel ID " << p.parcelId << " already exists in " << dataFile << ". Use \"Import ONE record\" instead.\n"; return;
         }
-        p.recipientId = toUpper(readLine("    Recipient ID: "));
-        if (!validId(p.recipientId)) { cout << "  [!] Invalid Recipient ID.\n"; return false; }
+        p.recipientId = toUpper(readLine("    Recipient ID (e.g. TP012345): "));
+        if (!validRecipientId(p.recipientId)) { cout << "  [!] Invalid Recipient ID (2 letters + 6 digits, e.g. TP012345).\n"; return; }
         p.recipientName = readLine("    Recipient Name: ");
-        if (!validName(p.recipientName)) { cout << "  [!] Invalid Recipient Name.\n"; return false; }
+        if (!validName(p.recipientName)) { cout << "  [!] Invalid Recipient Name (letters only, no commas, max 40).\n"; return; }
         p.deliveryCompany = readLine("    Delivery Company: ");
-        if (!validText(p.deliveryCompany)) { cout << "  [!] Invalid Delivery Company.\n"; return false; }
-        p.category = pickFromList(CATEGORIES, "Parcel Category");
-        if (p.category.empty()) { cout << "  [!] Invalid category choice.\n"; return false; }
-        p.serviceType = pickFromList(SERVICES, "Service Type");
-        if (p.serviceType.empty()) { cout << "  [!] Invalid service choice.\n"; return false; }
-        p.status = pickFromList(STATUSES, "Parcel Status");
-        if (p.status.empty()) { cout << "  [!] Invalid status choice.\n"; return false; }
-        if (newRecord) p.arrival = currentDateTime();
-        return true;
+        if (!validText(p.deliveryCompany)) { cout << "  [!] Invalid Delivery Company (no commas, max 40).\n"; return; }
+        p.category = pickFromList(CATEGORIES, "Parcel Type");
+        if (p.category.empty()) { cout << "  [!] Invalid parcel type choice.\n"; return; }
+
+        p.status  = "Pending";                                   // automatic
+        p.arrival = currentDateTime();                           // automatic
+        int fileSeq = ParcelTree::maxSeqInFile(dataFile);
+        int treeSeq = tree.maxSeq();
+        p.seq = (fileSeq > treeSeq ? fileSeq : treeSeq) + 1;     // automatic
+
+        if (!ParcelTree::editFile(dataFile, ParcelTree::FILE_APPEND, p.parcelId, &p)) { fileError(); return; }
+        tree.insert(p);
+        cout << "\n  [OK] Record added to the records and saved to " << dataFile << " (status: Pending):\n";
+        printParcelCard(p);
+    }
+
+    // ---------- 2. import ONE ----------
+    void importOne() {
+        cout << "\n  --- Import ONE Record from " << dataFile << " ---\n";
+        string id = toUpper(readLine("    Parcel ID to import: "));
+        if (!validParcelId(id)) { cout << "  [!] Invalid Parcel ID (must be 3-12 letters/digits).\n"; return; }
+        if (tree.search(id)) { cout << "  [!] Parcel " << id << " is already in the records.\n"; return; }
+        CategoryParcel p;
+        if (!ParcelTree::findInFile(dataFile, id, p)) { cout << "  [!] Parcel " << id << " does not exist in " << dataFile << ".\n"; return; }
+        tree.insert(p);
+        cout << "  [OK] Record imported:\n"; printParcelCard(p);
+    }
+
+    // ---------- 3. import ALL ----------
+    void importAll() {
+        cout << "\n  --- Import ALL Records from " << dataFile << " ---\n";
+        int skipped = 0;
+        int n = tree.importAll(dataFile, skipped);
+        if (n < 0)       cout << "  [!] Cannot open " << dataFile << ".\n";
+        else if (n == 0 && skipped == 0) cout << "  [!] " << dataFile << " contains no records.\n";
+        else cout << "  [OK] Imported " << n << " record(s); skipped " << skipped << " already in the records.\n"
+                  << "       Records now: " << tree.size() << "\n";
+    }
+
+    // ---------- 4. clear ----------
+    void clearRecords() {
+        cout << "\n  --- Clear Records ---\n";
+        if (tree.isEmpty()) { cout << "  [!] There are no records to clear.\n"; return; }
+        cout << "  This removes all " << tree.size() << " record(s) from memory. " << dataFile << " is NOT changed.\n";
+        if (toUpper(readLine("    Confirm clear? (Y/N): ")) != "Y") { cout << "  Cancelled.\n"; return; }
+        tree.clear();
+        cout << "  [OK] Records cleared (now 0).\n";
+    }
+
+    // ---------- report printing ----------
+    void report(const string& title, const string& note, int mode) {
+        cout << "\n  " << title << "\n  " << note << "\n\n";
+        printParcelHeader();
+        int cat[NUM_CATEGORIES];
+        int total = (mode == 1) ? tree.displayInorder(cat) : (mode == 2) ? tree.displayPreorder(cat) : tree.displayPostorder(cat);
+        cout << "  " << string(119, '-') << "\n  Total records: " << total << "\n\n  Summary by type:\n";
+        for (int i = 0; i < NUM_CATEGORIES; i++)
+            cout << "    " << left << setw(18) << CATEGORIES[i] << ": " << cat[i] << "\n";
     }
 
 public:
-    // Ensure the default parameter points to Task 1's file
-    CategoryModule(const string& file = "data/parcels.txt") : dataFile(file) {
-        int n = tree.loadFromFile(dataFile);
-        if (n > 0) cout << "  Loaded " << n << " parcel record(s) from Task 1 file into the BST.\n";
+    CategoryModule(const string& file) : dataFile(file) {
+        int skipped = 0;
+        if (tree.importAll(dataFile, skipped) < 0)
+            cout << "  [!] Could not load records from " << dataFile << ".\n";
+    }
+    size_t recordCount() const { return tree.size(); }
+    int treeHeight() const { return tree.height(); }
+
+    // ---------- INSERT submenu ----------
+    void insertMenu() {
+        string c;
+        do {
+            cout << "\n  --- INSERT PARCEL RECORD ---\n"
+                 << "    [1] Enter a new record manually\n"
+                 << "    [2] Import ONE record from parcels.txt\n"
+                 << "    [3] Import ALL records from parcels.txt\n"
+                 << "    [4] Clear records\n\n"
+                 << "    [0] Back\n";
+            c = readLine("\n  Choose: ");
+            if      (c == "1") insertManual();
+            else if (c == "2") importOne();
+            else if (c == "3") importAll();
+            else if (c == "4") clearRecords();
+            else if (c != "0") cout << "  [!] Invalid option.\n";
+            if (c != "0") readLine("\n  Press Enter to continue...");
+        } while (c != "0");
     }
 
-    bool syncInsert(const CategoryParcel& p) { bool ok = tree.insert(p); if (ok) save(); return ok; }
-    bool syncStatus(const string& id, const string& status) {
-        CategoryParcel* p = tree.search(id); if (!p) return false;
-        p->status = status; save(); return true;
-    }
-    bool syncRemove(const string& id) { bool ok = tree.remove(id); if (ok) save(); return ok; }
-
-    void insertParcel() {
-        cout << "\n  --- Insert New Parcel Record ---\n";
-        CategoryParcel p;
-        if (!inputParcel(p, true)) return;
-        tree.insert(p); save();
-        cout << "\n  [OK] Parcel inserted into BST and synced to Task 1 file:\n"; printParcelCard(p);
-    }
-
+    // ---------- SEARCH ----------
     void searchById() {
         cout << "\n  --- Search by Parcel ID ---\n";
         if (!requireData()) return;
         string id = toUpper(readLine("    Parcel ID: "));
-        if (!validId(id)) { cout << "  [!] Invalid Parcel ID.\n"; return; }
+        if (!validParcelId(id)) { cout << "  [!] Invalid Parcel ID (must be 3-12 letters/digits).\n"; return; }
         CategoryParcel* p = tree.search(id);
-        if (!p) cout << "  [!] Parcel " << id << " not found.\n";
+        if (!p) cout << "  [!] Parcel " << id << " does not exist in the records.\n";
         else { cout << "  [OK] Record found:\n"; printParcelCard(*p); }
     }
 
     void searchByCategory() {
-        cout << "\n  --- Search by Category / Service Type ---\n";
+        cout << "\n  --- Search by Parcel Type ---\n";
         if (!requireData()) return;
-        cout << "    [1] Parcel Category   [2] Service Type\n";
-        string c = readLine("    Search by: ");
-        bool bySvc = (c == "2");
-        if (c != "1" && c != "2") { cout << "  [!] Invalid choice.\n"; return; }
-        string key = bySvc ? pickFromList(SERVICES, "Service Type") : pickFromList(CATEGORIES, "Parcel Category");
-        if (key.empty()) { cout << "  [!] Invalid choice.\n"; return; }
-        cout << "\n"; printParcelHeader();
-        int n = tree.searchByCategory(key, bySvc);
-        if (n == 0) cout << "  [!] No parcels found for \"" << key << "\".\n";
-        else cout << "\n  " << n << " parcel(s) found for \"" << key << "\".\n";
+        string key = pickFromList(CATEGORIES, "Parcel Type");
+        if (key.empty()) { cout << "  [!] Invalid parcel type choice.\n"; return; }
+        cout << "\n  Results for type: " << key << "\n"; printParcelHeader();
+        int n = tree.searchByCategory(key);
+        if (n == 0) cout << "  [!] No parcels of type \"" << key << "\" exist in the records.\n";
+        else        cout << "  " << string(119, '-') << "\n  " << n << " parcel(s) found.\n";
     }
 
+    // ---------- DISPLAY ----------
     void displayRecords() {
-        cout << "\n  --- Display / Traverse Parcel Records ---\n";
+        cout << "\n  --- Display All Parcels ---\n";
         if (!requireData()) return;
-        cout << "    [1] In-order    (sorted by Parcel ID - best for reports)\n"
-             << "    [2] Pre-order   (root first - shows how tree was built / backup order)\n"
-             << "    [3] Post-order  (children first - order used to safely free the tree)\n"
-             << "    [4] Level-order (level by level - shows tree balance)\n";
-        string c = readLine("    Traversal: ");
-        cout << "\n";
-        if (c == "4") { tree.displayLevelOrder(); return; }
-        if (c != "1" && c != "2" && c != "3") { cout << "  [!] Invalid choice.\n"; return; }
-        printParcelHeader();
-        int n = (c == "1") ? tree.displayInorder() : (c == "2") ? tree.displayPreorder() : tree.displayPostorder();
-        cout << "\n  Total: " << n << " record(s).\n";
+        cout << "    [1] In-order       Left-Root-Right   sorted by Parcel ID  (recommended for staff reports)\n"
+             << "    [2] Pre-order      Root-Left-Right   parent before children (shows how the tree was built)\n"
+             << "    [3] Post-order     Left-Right-Root   children before parent (order used to free the tree)\n"
+             << "    [4] Tree structure                   BST diagram\n\n"
+             << "    [0] Back\n";
+        string c = readLine("    Choose: ");
+        if (c == "0")
+            return;
+        if (c == "1")
+            report("PARCEL REPORT - IN-ORDER TRAVERSAL",
+                   "Visits Left -> Root -> Right, so records are listed in ascending Parcel ID order.", 1);
+        else if (c == "2")
+            report("PARCEL LIST - PRE-ORDER TRAVERSAL",
+                   "Visits Root -> Left -> Right: each parent appears before its children (insertion/backup order).", 2);
+        else if (c == "3")
+            report("PARCEL LIST - POST-ORDER TRAVERSAL",
+                   "Visits Left -> Right -> Root: each parent appears after its children.", 3);
+        else if (c == "4") {
+            cout << "\n  PARCEL ORGANISATION STRUCTURE (BST)\n"
+                 << "  Nodes: " << tree.size() << "   Height: " << tree.height() << "\n"
+                 << "  Root is at the left; right children are drawn above (/--), left children below (\\--).\n\n";
+            tree.displayStructure();
+        }
+        else cout << "  [!] Invalid choice.\n";
     }
 
-    void showStructure() {
-        cout << "\n  --- Parcel Organisation Structure (BST) ---\n";
-        if (!requireData()) return;
-        cout << "  Nodes: " << tree.size() << "   Height: " << tree.height()
-             << "   (root at left, right subtree on top)\n\n";
-        tree.displayStructure();
-        cout << "\n  Level-order view:\n"; tree.displayLevelOrder();
-    }
-
+    // ---------- UPDATE: records + file ----------
     void updateParcel() {
-        cout << "\n  --- Update Parcel Record ---\n";
+        cout << "\n  --- Update Parcel ---\n";
         if (!requireData()) return;
         string id = toUpper(readLine("    Parcel ID to update: "));
-        if (!validId(id)) { cout << "  [!] Invalid Parcel ID.\n"; return; }
+        if (!validParcelId(id)) { cout << "  [!] Invalid Parcel ID (must be 3-12 letters/digits).\n"; return; }
         CategoryParcel* cur = tree.search(id);
-        if (!cur) { cout << "  [!] Cannot update: Parcel " << id << " does not exist.\n"; return; }
+        if (!cur) {
+            CategoryParcel tmp;
+            if (ParcelTree::findInFile(dataFile, id, tmp))
+                cout << "  [!] Parcel " << id << " is in " << dataFile << " but not in the records. Import it first (Insert > option 2).\n";
+            else cout << "  [!] Cannot update: Parcel " << id << " does not exist.\n";
+            return;
+        }
         cout << "  Current record:\n"; printParcelCard(*cur);
-        cout << "  Enter new details (Parcel ID / key cannot be changed):\n";
+        cout << "  Enter new details (press Enter to keep the current value; Parcel ID cannot be changed):\n";
+
         CategoryParcel np = *cur;
-        if (!inputParcel(np, false)) return;
-        np.parcelId = cur->parcelId; np.arrival = cur->arrival;
-        *cur = np; save();
-        cout << "\n  [OK] Record updated and synced to Task 1 file:\n"; printParcelCard(*cur);
+        string in = toUpper(readLine("    Recipient ID [" + cur->recipientId + "]: "));
+        if (!in.empty()) { if (!validRecipientId(in)) { cout << "  [!] Invalid Recipient ID (e.g. TP012345).\n"; return; } np.recipientId = in; }
+        in = readLine("    Recipient Name [" + cur->recipientName + "]: ");
+        if (!in.empty()) { if (!validName(in)) { cout << "  [!] Invalid Recipient Name.\n"; return; } np.recipientName = in; }
+        in = readLine("    Delivery Company [" + cur->deliveryCompany + "]: ");
+        if (!in.empty()) { if (!validText(in)) { cout << "  [!] Invalid Delivery Company.\n"; return; } np.deliveryCompany = in; }
+        np.category = pickFromList(CATEGORIES, "Parcel Type", cur->category);
+        if (np.category.empty()) { cout << "  [!] Invalid parcel type choice.\n"; return; }
+        np.status = pickFromList(STATUSES, "Parcel Status", cur->status);
+        if (np.status.empty()) { cout << "  [!] Invalid status choice.\n"; return; }
+
+        if (!ParcelTree::editFile(dataFile, ParcelTree::FILE_UPDATE, id, &np)) { fileError(); return; }
+        *cur = np;
+        cout << "\n  [OK] Record updated in the records and in " << dataFile << ":\n"; printParcelCard(*cur);
     }
 
+    // ---------- DELETE: records + file ----------
     void removeParcel() {
-        cout << "\n  --- Remove Parcel Record ---\n";
+        cout << "\n  --- Delete Parcel ---\n";
         if (!requireData()) return;
-        string id = toUpper(readLine("    Parcel ID to remove: "));
-        if (!validId(id)) { cout << "  [!] Invalid Parcel ID.\n"; return; }
+        string id = toUpper(readLine("    Parcel ID to delete: "));
+        if (!validParcelId(id)) { cout << "  [!] Invalid Parcel ID (must be 3-12 letters/digits).\n"; return; }
         CategoryParcel* p = tree.search(id);
-        if (!p) { cout << "  [!] Cannot delete: Parcel " << id << " does not exist.\n"; return; }
+        if (!p) {
+            CategoryParcel tmp;
+            if (ParcelTree::findInFile(dataFile, id, tmp))
+                cout << "  [!] Parcel " << id << " is in " << dataFile << " but not in the records. Import it first (Insert > option 2).\n";
+            else cout << "  [!] Cannot delete: Parcel " << id << " does not exist.\n";
+            return;
+        }
         printParcelCard(*p);
         if (toUpper(readLine("    Confirm delete? (Y/N): ")) != "Y") { cout << "  Cancelled.\n"; return; }
-        tree.remove(id); save();
-        cout << "  [OK] Parcel " << id << " removed and synced to Task 1 file.\n";
-    }
-
-    void run() {
-        string c;
-        do {
-            cout << "\n  ================================================================\n"
-                 << "                     SMART CAMPUS PARCEL SYSTEM\n"
-                 << "                 Task 5 - Parcel Category Organisation\n"
-                 << "  ================================================================\n\n"
-                 << "  Records in BST: " << tree.size() << "  |  Height: " << tree.height() << "\n\n"
-                 << "  ----------------------------------------------------------------\n"
-                 << "     [1]  Insert new parcel record\n"
-                 << "     [2]  Search by Parcel ID                    (BST search)\n"
-                 << "     [3]  Search by Category / Service\n"
-                 << "     [4]  Display / traverse records     (In/Pre/Post/Level-order)\n"
-                 << "     [5]  View tree structure\n"
-                 << "     [6]  Update parcel record\n"
-                 << "     [7]  Remove parcel record\n\n"
-                 << "     [0]  Back (data is saved automatically)\n"
-                 << "  ----------------------------------------------------------------\n";
-            c = readLine("\n  Choose an option: ");
-            if      (c == "1") insertParcel();
-            else if (c == "2") searchById();
-            else if (c == "3") searchByCategory();
-            else if (c == "4") displayRecords();
-            else if (c == "5") showStructure();
-            else if (c == "6") updateParcel();
-            else if (c == "7") removeParcel();
-            else if (c != "0") cout << "  [!] Invalid option.\n";
-            if (c != "0") pause();
-        } while (c != "0");
-        save();
+        if (!ParcelTree::editFile(dataFile, ParcelTree::FILE_DELETE, id, nullptr)) { fileError(); return; }
+        tree.remove(id);
+        cout << "  [OK] Parcel " << id << " deleted from the records and from " << dataFile << ".\n";
     }
 };
 
-inline void runCategoryModule(const std::string& file = "data/parcels.txt") { CategoryModule m(file); m.run(); }} // namespace task5
+// Runs the Task 5 menu and returns to the caller when the user chooses 0.
+// Every change is already written to the data file at the moment it is made.
+inline void runCategoryModule(const string& file) {
+    CategoryModule module(file);
+    string c;
+    do {
+        cout << "\n  ================================================================\n"
+             << "                     SMART CAMPUS PARCEL SYSTEM\n"
+             << "                 Task 5 - Parcel Category Organisation\n"
+             << "  ================================================================\n"
+             << "  Records: " << module.recordCount() << "  |  Tree height: " << module.treeHeight() << "\n"
+             << "  ----------------------------------------------------------------\n"
+             << "     [1]  Insert parcel record   (manual / import / clear)\n"
+             << "     [2]  Search by Parcel ID\n"
+             << "     [3]  Search by Parcel Type\n"
+             << "     [4]  Display all parcels    (In/Pre/Post-order, tree structure)\n"
+             << "     [5]  Update parcel\n"
+             << "     [6]  Delete parcel\n\n"
+             << "     [0]  Back\n"
+             << "  ----------------------------------------------------------------\n";
+        c = readLine("\n  Choose an option: ");
+        if      (c == "1") module.insertMenu();
+        else if (c == "2") module.searchById();
+        else if (c == "3") module.searchByCategory();
+        else if (c == "4") module.displayRecords();
+        else if (c == "5") module.updateParcel();
+        else if (c == "6") module.removeParcel();
+        else if (c != "0") cout << "  [!] Invalid option.\n";
+        if (c != "0" && c != "1") readLine("\n  Press Enter to continue...");
+    } while (c != "0");
+    cout << "\n  [OK] " << file << " is up to date. Returning to the main menu.\n";
+}
+
+} // namespace task5
 #endif
