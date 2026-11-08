@@ -7,6 +7,7 @@
 #include "parcel_registry.hpp"
 #include "parcel_queue.hpp"
 #include "parcel_priority_queue.hpp"
+#include "parcel_guard.hpp"
 #include "../task4 (Muhlis)/activity_log.hpp"
 
 class ParcelModule {
@@ -16,6 +17,7 @@ private:
     ParcelPriorityQueue processQueue;
     long                seqCounter;
     ActivityLog*        activityLog;   // Task 4 history (nullptr = not connected)
+    ParcelGuard*        guard;         // Task 2/3 "is this parcel in use?" check (nullptr = not connected)
 
     static bool isValidId(const std::string& s) {
         if (s.size() < 3 || s.size() > 12) return false;
@@ -52,8 +54,9 @@ private:
     }
 
 public:
-    ParcelModule() : seqCounter(0), activityLog(nullptr) {}
+    ParcelModule() : seqCounter(0), activityLog(nullptr), guard(nullptr) {}
     void setLog(ActivityLog* log) { activityLog = log; }
+    void setGuard(ParcelGuard* g) { guard = g; }
 
     bool registerParcel(const std::string& parcelId, const std::string& recipientId,
                         const std::string& recipientName, const std::string& company,
@@ -203,7 +206,7 @@ public:
                     p->status = ParcelStatus::ReadyForCollection;
                     break;
                 case ParcelType::Large:
-                    outRoute = "Delivery Desk (campus delivery)";
+                    outRoute = "Delivery Personnel (campus delivery)";
                     p->status = ParcelStatus::OutForDelivery;
                     break;
                 case ParcelType::Document:
@@ -248,6 +251,15 @@ public:
             ui::error("Parcel is already '" + statusToString(p->status) + "' - it cannot be changed."); return false;
         }
         if (p->status == newStatus) { ui::error("Parcel already has that status."); return false; }
+
+        // Finishing a parcel by hand would skip Task 2/3, so block it while a job is active.
+        std::string why;
+        if (isTerminalStatus(newStatus) && guard && guard->isBusy(id, why)) {
+            ui::error("Cannot set '" + statusToString(newStatus) + "': " + why +
+                      " Finish or cancel that job first.");
+            return false;
+        }
+
         ParcelStatus old = p->status;
         p->status = newStatus;
         if (activityLog) activityLog->record(ActivityType::StatusChange, id, "-", "-", old, newStatus);
@@ -258,8 +270,17 @@ public:
     bool removeParcel(const std::string& id) {
         if (registry.isEmpty()) { ui::error("There are no records to remove."); return false; }
         Parcel* gone = registry.find(id);
-        if (gone && activityLog) activityLog->record(ActivityType::Removal, id, "-", "-", gone->status, gone->status);
-        if (!registry.remove(id)) { ui::error("Parcel " + id + " not found."); return false; }
+        if (!gone) { ui::error("Parcel " + id + " not found."); return false; }
+
+        // A request or resource may still hold this parcel.
+        std::string why;
+        if (guard && guard->isBusy(id, why)) {
+            ui::error("Cannot remove " + id + ": " + why);
+            return false;
+        }
+
+        if (activityLog) activityLog->record(ActivityType::Removal, id, "-", "-", gone->status, gone->status);
+        registry.remove(id);
         ui::success("Parcel " + id + " removed from the records.");
         return true;
     }
