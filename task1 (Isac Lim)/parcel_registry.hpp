@@ -60,6 +60,17 @@ public:
         return false;
     }
 
+    // Drop every parcel so loadFromFile can reload from disk cleanly.
+    void clear() {
+        while (head) {
+            ParcelNode* t = head;
+            head = head->next;
+            delete t;
+        }
+        head = tail = nullptr;
+        count = 0;
+    }
+
     int countByStatus(ParcelStatus s) const {
         int n = 0;
         for (ParcelNode* c = head; c; c = c->next) if (c->data.status == s) ++n;
@@ -87,31 +98,27 @@ public:
         ui::cell(statusToString(p.status), w[6]);
         ui::rowClose();
     }
-    static void printFooter() {
-        ui::tableLine(widths(), 7);
-    }
 
     void displayAll() const {
-        if (!head) { ui::info("No parcel records."); return; }
+        if (isEmpty()) { ui::info("No parcels registered."); return; }
         printHeader();
         for (ParcelNode* c = head; c; c = c->next) printRow(c->data);
-        printFooter();
-        std::cout << "  Total: " << count << " record(s)\n";
+        ui::tableLine(widths(), 7);
+        std::cout << "  " << count << " parcel(s)\n";
     }
 
     int displayByRecipient(const std::string& rid) const {
-        int found = 0;
-        for (ParcelNode* c = head; c; c = c->next) {
+        int n = 0;
+        for (ParcelNode* c = head; c; c = c->next)
             if (c->data.recipientId == rid) {
-                if (found == 0) printHeader();
+                if (n == 0) printHeader();
                 printRow(c->data);
-                ++found;
+                ++n;
             }
+        if (n > 0) {
+            ui::tableLine(widths(), 7);
+            std::cout << "  " << n << " parcel(s) for " << rid << "\n";
         }
-        if (found > 0) {
-            printFooter();
-            std::cout << "  Total: " << found << " record(s)\n";
-        }
-        return found;
+        return n;
     }
 };

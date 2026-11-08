@@ -132,7 +132,7 @@ public:
     }
 
     // Returns the node for this parcel ID, or NULL
-    Request* findByParcel(string parcelId) {
+    Request* findByParcel(string parcelId) const {
         Request* current = head;
         while (current != NULL && current->parcelId != parcelId) current = current->next;
         return current;

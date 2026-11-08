@@ -4,9 +4,10 @@
 #include <string>
 #include <cstdlib>
 #include "request_list.hpp"
+#include "../task1 (Isac Lim)/parcel_guard.hpp"
 using namespace std;
 
-class RequestModule : public RequestLookup, public RequestLink {
+class RequestModule : public RequestLookup, public RequestLink, public ParcelGuard {
 private:
     RequestList pending;       // priority queue of requests waiting for a resource
     RequestList processing;    // requests a resource is handling now
@@ -98,6 +99,23 @@ public:
     }
 
     void setLog(ActivityLog* log) { activityLog = log; }
+
+    // ParcelGuard: true if a request or resource still uses this parcel.
+    bool isBusy(const std::string& parcelId, std::string& reason) const override {
+        Request* r = pending.findByParcel(parcelId);
+        if (r == NULL) r = processing.findByParcel(parcelId);
+        if (r != NULL) {
+            reason = "parcel has active request " + r->requestId
+                   + " (" + requestStatusToString(r->status) + ")";
+            return true;
+        }
+        string rid = resources.resourceHolding(parcelId);
+        if (rid != "-") {
+            reason = "resource " + rid + " is still holding this parcel";
+            return true;
+        }
+        return false;
+    }
 
     // For Task 3: ID of the Pending / Processing request for this parcel, or "-"
     string activeRequestFor(string parcelId) {

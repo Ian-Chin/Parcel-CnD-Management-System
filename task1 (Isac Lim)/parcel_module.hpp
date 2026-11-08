@@ -301,7 +301,13 @@ public:
         return true;
     }
 
-    int loadFromFile(const std::string& path) {
+        int loadFromFile(const std::string& path) {
+        // Always start from a clean slate so a reload (e.g. after Task 5)
+        // does not hit "duplicate ID" and keep stale in-memory data.
+        registry.clear();
+        processQueue.clear();
+        seqCounter = 0;
+
         std::ifstream in(path.c_str());
         if (!in) { ui::warn("Data file '" + path + "' not found - starting with empty records."); return 0; }
         std::string line;

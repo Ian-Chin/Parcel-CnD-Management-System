@@ -53,6 +53,9 @@ public:
     bool isEmpty() const { return count == 0; }
     int  size() const { return count; }
 
+    // Empty the heap so loadFromFile can rebuild it from the file.
+    void clear() { count = 0; }
+
     // True if this parcel already has an entry in the heap. O(n).
     bool contains(const std::string& id) const {
         for (int i = 0; i < count; ++i)

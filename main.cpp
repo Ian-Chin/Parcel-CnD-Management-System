@@ -44,6 +44,7 @@ int main() {
     requests.setLog(&activities);
     resources.setRequestLookup(&requests);
     activities.setRequestLink(&requests);              // Task 4 undo can put a request back
+    parcels.setGuard(&requests);                       // block remove / terminal status while request or resource holds the parcel
 
     std::cout << "\n";
     activities.setStaff(activity_menu::askStaffId());  // stamped on every activity

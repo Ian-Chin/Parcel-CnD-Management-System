@@ -108,7 +108,7 @@ public:
     bool exists(string id) { return findIndex(id) != -1; }
 
     // Returns the ID of the resource handling this parcel, or "-" if none
-    string resourceHolding(string parcelId) {
+    string resourceHolding(string parcelId) const {
         for (int i = 0; i < resourceCount; i++)
             if (resources[i].status == OCCUPIED && resources[i].parcelId == parcelId) return resources[i].resourceId;
         return "-";
