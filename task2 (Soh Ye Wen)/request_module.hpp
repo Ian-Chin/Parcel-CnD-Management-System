@@ -98,8 +98,14 @@ private:
     // Asks Task 3 for a resource; on success moves the request to processing
     bool startRequest(Request* r) {
         if (parcelFinished(r)) { closeFinished(r); return false; }
+        // The parcel status may have changed since the request was created
+        if (!serviceAllowed(r->service, parcels.findParcel(r->parcelId)->status)) {
+            ui::info("Request " + r->requestId + " stays Pending. Update the parcel first or cancel the request.");
+            return false;
+        }
         if (!resources.assign(r->parcelId, r->requestId, r->service)) {
             ui::info("Request " + r->requestId + " stays Pending. Try again later.");
+            ui::info("Use option 6 to process another request.");
             return false;
         }
         pending.removeById(r->requestId);
@@ -123,6 +129,9 @@ public:
     }
 
     void setLog(ActivityLog* log) { activityLog = log; }
+
+    // Staff ID entered at startup (kept by Task 4), "-" if not connected
+    string currentStaff() { return activityLog != NULL ? activityLog->staffId() : "-"; }
 
     // ParcelGuard: true if a request or resource still uses this parcel.
     bool isBusy(const std::string& parcelId, std::string& reason) const override {

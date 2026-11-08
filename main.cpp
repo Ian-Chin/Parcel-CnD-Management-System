@@ -62,7 +62,7 @@ int main() {
         else if (choice == 4) activity_menu::run(activities, parcels, resources, PARCEL_FILE, RESOURCE_FILE, REQUEST_FILE);
         else if (choice == 5) {
             parcels.saveToFile(PARCEL_FILE);                 // write Task 1's latest data first
-            task5::runCategoryModule(CATEGORY_FILE);         // Task 5 edits data/parcels.txt, saves on 0
+            task5::runCategoryModule(CATEGORY_FILE, &requests, &activities);   // Task 5 edits data/parcels.txt; guard + history connected
             parcels.loadFromFile(PARCEL_FILE);               // refresh Task 1's in-memory list
         }
         ui::clearScreen();

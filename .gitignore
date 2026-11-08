@@ -3,3 +3,9 @@ task1_app
 task3_app*
 task4_app*
 parcel_system*
+
+# build output
+*.exe
+*.o
+main
+build/

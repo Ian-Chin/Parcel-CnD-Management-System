@@ -196,6 +196,7 @@ public:
     // bring its own (Task 1, Task 3 and undo).
     void setStaff(const std::string& id) { staff = id.empty() ? "-" : id; }
     const std::string& currentStaff() const { return staff; }
+    std::string staffId() const override { return staff; }   // for Task 2 (through ActivityLog)
 
     ~ActivityModule() {
         Activity* a;
@@ -234,7 +235,7 @@ public:
     // Most recent first: pop from history until k activities are shown.
     void displayRecent(int k) {
         if (isEmpty()) { ui::info("No activity history yet."); return; }
-        const int w[COLS] = { 6, 19, 9, 23, 16, 16, 7, 8, 5 };
+        const int w[COLS] = { 6, 19, 9, 24, 16, 16, 7, 8, 5 };
         tableHeader(w, false);
         Stack<Activity*> temp;
         Activity* a;
@@ -253,7 +254,7 @@ public:
     // Oldest first, so the table shows the order in which things happened.
     void displayAll() {
         if (isEmpty()) { ui::info("No activity history yet."); return; }
-        const int w[COLS] = { 6, 19, 9, 23, 16, 16, 7, 8, 5 };
+        const int w[COLS] = { 6, 19, 9, 24, 16, 16, 7, 8, 5 };
         tableHeader(w, false);
         Stack<Activity*> temp;
         moveAllToTemp(temp);                 // temp top = oldest
@@ -272,7 +273,7 @@ public:
         if (isEmpty()) { ui::info("No activity history yet."); return; }
         Parcel* p = parcels.findParcel(parcelId);
 
-        const int w[COLS] = { 4, 6, 19, 23, 16, 16, 7, 8, 5 };
+        const int w[COLS] = { 4, 6, 19, 24, 16, 16, 7, 8, 5 };
         Stack<Activity*> temp;
         moveAllToTemp(temp);                 // temp top = oldest
         Activity* a;
@@ -384,10 +385,19 @@ public:
                 if (!requests->isProcessing(a->requestId))
                     return "request " + a->requestId + " is no longer Processing.";
             }
-        } else if (holder != "-" && (a->prevStatus == static_cast<int>(ParcelStatus::Received) ||
-                                     a->prevStatus == static_cast<int>(ParcelStatus::Pending))) {
-            return "parcel " + a->parcelId + " is still held by resource " + holder + ", so it cannot go back to '" +
-                   statusLabel(a->prevStatus) + "'.";
+        } else {
+            // A Task 2 request was made for the parcel's current status, so the
+            // status cannot be changed back while that request is still active.
+            if (requests) {
+                std::string active = requests->activeRequestFor(a->parcelId);
+                if (active != "-")
+                    return "parcel " + a->parcelId + " has active request " + active +
+                           ". Finish or cancel it in Task 2 first.";
+            }
+            if (holder != "-" && (a->prevStatus == static_cast<int>(ParcelStatus::Received) ||
+                                  a->prevStatus == static_cast<int>(ParcelStatus::Pending)))
+                return "parcel " + a->parcelId + " is still held by resource " + holder + ", so it cannot go back to '" +
+                       statusLabel(a->prevStatus) + "'.";
         }
         return "";
     }

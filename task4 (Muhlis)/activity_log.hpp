@@ -38,6 +38,7 @@ public:
                         const std::string& requestId, const std::string& resourceId,
                         ParcelStatus oldStatus, ParcelStatus newStatus,
                         const std::string& staffId = "-") = 0;
+    virtual std::string staffId() const = 0;   // Staff ID entered at startup ("-" = none)
     virtual ~ActivityLog() {}
 };
 
@@ -49,5 +50,6 @@ public:
     virtual bool isProcessing(std::string requestId) = 0;    // request is Processing now?
     virtual bool backToPending(std::string requestId) = 0;   // Processing -> Pending
     virtual bool saveToFile(std::string path) = 0;           // writes requests.txt
+    virtual std::string activeRequestFor(std::string parcelId) = 0;   // Pending / Processing request, or "-"
     virtual ~RequestLink() {}
 };

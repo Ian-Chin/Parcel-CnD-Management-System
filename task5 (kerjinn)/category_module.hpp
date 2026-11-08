@@ -2,11 +2,21 @@
 #ifndef CATEGORY_MODULE_HPP
 #define CATEGORY_MODULE_HPP
 #include "parcel_tree.hpp"
+#include "../task1 (Isac Lim)/parcel_guard.hpp"
+#include "../task4 (Muhlis)/activity_log.hpp"
 
 namespace task5 {
 
 inline string readLine(const string& prompt) {
-    string s; cout << prompt; getline(cin, s); return trim(s);
+    string s; cout << prompt;
+    if (!getline(cin, s)) { cout << "\n"; exit(0); }   // input closed
+    return trim(s);
+}
+
+// Status text -> Task 1 status number (same order as STATUSES)
+inline ParcelStatus toStatus(const string& s) {
+    int i = indexOf(STATUSES, NUM_STATUSES, s);
+    return static_cast<ParcelStatus>(i < 0 ? 1 : i + 1);
 }
 
 // Parcel ID: 3 to 12 letters/digits
@@ -50,6 +60,11 @@ class CategoryModule {
 private:
     ParcelTree tree;      // "records" held in memory
     string dataFile;      // data/parcels.txt
+    ParcelGuard* guard;   // Task 2/3 "is this parcel in use?" check (nullptr = standalone)
+    ActivityLog* log;     // Task 4 history (nullptr = standalone)
+
+    // True if a request or resource still uses this parcel
+    bool inUse(const string& id, string& why) { return guard && guard->isBusy(id, why); }
 
     bool requireData() {
         if (tree.isEmpty()) {
@@ -80,7 +95,7 @@ private:
         p.category = pickFromList(CATEGORIES, "Parcel Type");
         if (p.category.empty()) { cout << "  [!] Invalid parcel type choice.\n"; return; }
 
-        p.status  = "Pending";                                   // automatic
+        p.status  = "Received";                                  // automatic (same start as Task 1)
         p.arrival = currentDateTime();                           // automatic
         int fileSeq = ParcelTree::maxSeqInFile(dataFile);
         int treeSeq = tree.maxSeq();
@@ -88,7 +103,8 @@ private:
 
         if (!ParcelTree::editFile(dataFile, ParcelTree::FILE_APPEND, p.parcelId, &p)) { fileError(); return; }
         tree.insert(p);
-        cout << "\n  [OK] Record added to the records and saved to " << dataFile << " (status: Pending):\n";
+        if (log) log->record(ActivityType::Registration, p.parcelId, "-", "-", ParcelStatus::Received, ParcelStatus::Received);
+        cout << "\n  [OK] Record added to the records and saved to " << dataFile << " (status: Received):\n";
         printParcelCard(p);
     }
 
@@ -137,7 +153,8 @@ private:
     }
 
 public:
-    CategoryModule(const string& file) : dataFile(file) {
+    CategoryModule(const string& file, ParcelGuard* g = nullptr, ActivityLog* l = nullptr)
+        : dataFile(file), guard(g), log(l) {
         int skipped = 0;
         if (tree.importAll(dataFile, skipped) < 0)
             cout << "  [!] Could not load records from " << dataFile << ".\n";
@@ -246,7 +263,32 @@ public:
         np.status = pickFromList(STATUSES, "Parcel Status", cur->status);
         if (np.status.empty()) { cout << "  [!] Invalid status choice.\n"; return; }
 
+        // Same rules as Task 1, so the other modules stay consistent
+        bool statusChanged  = np.status != cur->status;
+        bool detailsChanged = np.recipientId != cur->recipientId || np.recipientName != cur->recipientName ||
+                              np.deliveryCompany != cur->deliveryCompany || np.category != cur->category;
+        if (!statusChanged && !detailsChanged) { cout << "  [!] Nothing was changed.\n"; return; }
+        if (np.category != cur->category && cur->status != "Received") {
+            cout << "  [!] Parcel type can only be changed while the status is Received.\n"; return;
+        }
+        string why;
+        if (np.recipientId != cur->recipientId && inUse(id, why)) {
+            cout << "  [!] Cannot change the Recipient ID: " << why << ".\n"; return;
+        }
+        if (statusChanged) {
+            ParcelStatus oldS = toStatus(cur->status), newS = toStatus(np.status);
+            if (isTerminalStatus(oldS)) { cout << "  [!] Parcel is already " << cur->status << ", its status cannot be changed.\n"; return; }
+            if (newS == ParcelStatus::Received || newS == ParcelStatus::Pending || newS == ParcelStatus::Processing) {
+                cout << "  [!] " << np.status << " is set by Task 1 sorting/processing, not by hand.\n"; return;
+            }
+            if (inUse(id, why)) { cout << "  [!] Cannot change the status: " << why << ". Finish or cancel that job first.\n"; return; }
+        }
+
         if (!ParcelTree::editFile(dataFile, ParcelTree::FILE_UPDATE, id, &np)) { fileError(); return; }
+        if (log) {
+            if (detailsChanged) log->record(ActivityType::ParcelUpdate, id, "-", "-", toStatus(cur->status), toStatus(cur->status));
+            if (statusChanged)  log->record(ActivityType::StatusChange, id, "-", "-", toStatus(cur->status), toStatus(np.status));
+        }
         *cur = np;
         cout << "\n  [OK] Record updated in the records and in " << dataFile << ":\n"; printParcelCard(*cur);
     }
@@ -266,8 +308,11 @@ public:
             return;
         }
         printParcelCard(*p);
+        string why;
+        if (inUse(id, why)) { cout << "  [!] Cannot delete " << id << ": " << why << ".\n"; return; }
         if (toUpper(readLine("    Confirm delete? (Y/N): ")) != "Y") { cout << "  Cancelled.\n"; return; }
         if (!ParcelTree::editFile(dataFile, ParcelTree::FILE_DELETE, id, nullptr)) { fileError(); return; }
+        if (log) log->record(ActivityType::Removal, id, "-", "-", toStatus(p->status), toStatus(p->status));
         tree.remove(id);
         cout << "  [OK] Parcel " << id << " deleted from the records and from " << dataFile << ".\n";
     }
@@ -275,8 +320,9 @@ public:
 
 // Runs the Task 5 menu and returns to the caller when the user chooses 0.
 // Every change is already written to the data file at the moment it is made.
-inline void runCategoryModule(const string& file) {
-    CategoryModule module(file);
+// guard / log connect Task 5 to Tasks 2-4 in the integrated program (nullptr when standalone).
+inline void runCategoryModule(const string& file, ParcelGuard* guard = nullptr, ActivityLog* log = nullptr) {
+    CategoryModule module(file, guard, log);
     string c;
     do {
         cout << "\n  ================================================================\n"

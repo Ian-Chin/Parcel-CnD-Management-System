@@ -1,7 +1,7 @@
-# ActivityID,ParcelID,RequestID,ResourceID,Type(1-17),DateTime,PrevStatus(0-9),NewStatus(1-9),Reversed(0/1),Reverses
+# ActivityID,ParcelID,RequestID,ResourceID,Type(1-18),DateTime,PrevStatus(0-9),NewStatus(1-9),Reversed(0/1),Reverses,StaffID
 # Type: 1=Registration 2=ParcelUpdate 3=Sorting 4=Processing 5=StatusChange 6=Removal 7=Assignment 8=JobCompleted
 #       9=JobCancelled 10=ResourceUnavailable 11=Reassignment 12=Cancellation 13=ReportedMissing
-#       14=CollectionConfirmation 15=ReturnProcessing 16=Reversal 17=ServiceRequestCreation
+#       14=CollectionConfirmation 15=ReturnProcessing 16=Reversal 17=ServiceRequestCreation 18=RequestCancelled
 # Status: 0=none 1=Received 2=Pending 3=Processing 4=Ready 5=OutForDelivery 6=Collected 7=Returned 8=Missing 9=Cancelled
 A0001,P001,-,-,1,2026-11-05 08:09:00,0,1,0,-
 A0002,P001,-,-,3,2026-11-05 08:18:00,1,2,0,-
@@ -49,7 +49,3 @@ A0043,P011,-,-,13,2026-11-05 15:27:00,4,8,0,-
 A0044,P006,-,C01,7,2026-11-08 01:09:14,4,4,0,-
 A0045,P006,-,C01,14,2026-11-08 01:09:43,4,6,0,-
 A0046,P004,R004,DP02,11,2026-11-08 01:12:23,5,5,0,-
-A0047,P001,-,-,1,2026-11-08 17:57:15,0,1,0,-,ST01
-A0048,P001,-,-,6,2026-11-08 17:59:04,1,1,0,-,ST01
-A0049,P001,-,-,1,2026-11-08 17:59:51,0,1,0,-,ST01
-A0050,P001,-,-,6,2026-11-08 18:00:04,1,1,0,-,ST01

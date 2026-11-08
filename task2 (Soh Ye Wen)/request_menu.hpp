@@ -33,8 +33,7 @@ bool doCreate(RequestModule& m, ParcelModule& parcels) {
     heading("CREATE SERVICE REQUEST");
     parcels.displayAll();
     cout << "\n";
-    string staffId = readId("Staff ID (0 to cancel)");
-    if (staffId == "0") return false;
+    string staffId = m.currentStaff();   // Staff ID entered at startup
     string parcelId = readId("Parcel ID (0 to cancel)");
     if (parcelId == "0") return false;
     string recipientId = readId("Recipient ID (0 to cancel)");
@@ -112,6 +111,8 @@ void run(RequestModule& module, ParcelModule& parcels, ResourceModule& resources
         else if (choice == 9) { heading("REQUEST HISTORY"); module.displayHistory(); }
 
         if (changed) saveAll(module, parcels, resources, requestFile, parcelFile, resourceFile);
+        ui::pause();
+        ui::clearScreen();
     }
     saveAll(module, parcels, resources, requestFile, parcelFile, resourceFile);
 }
