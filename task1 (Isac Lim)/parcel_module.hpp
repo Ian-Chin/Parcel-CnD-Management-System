@@ -237,7 +237,7 @@ public:
                     outRoute = "Special-Handling Counter (needs a Special Handling service request)";
                     break;
                 case ParcelType::Fragile:
-                    outRoute = "Collection Counter (handle with care)";
+                    outRoute = "Special-Handling Counter (handle with care)";
                     p->status = ParcelStatus::ReadyForCollection;
                     break;
                 case ParcelType::Large:
