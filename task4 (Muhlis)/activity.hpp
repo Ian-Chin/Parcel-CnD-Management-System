@@ -57,12 +57,12 @@ inline std::string whyNotReversible(ActivityType t) {
         case ActivityType::CollectionConfirmation: return "a confirmed collection cannot be undone.";
         case ActivityType::ReturnProcessing:       return "a processed return cannot be undone.";
         case ActivityType::JobCompleted:           return "a completed job cannot be undone.";
-        case ActivityType::JobCancelled:           return "a cancelled assignment cannot be undone - assign the parcel again instead.";
+        case ActivityType::JobCancelled:           return "a cancelled assignment cannot be undone. Assign the parcel again instead.";
         case ActivityType::ResourceUnavailable:
         case ActivityType::Reassignment:           return "it was done automatically by the system.";
         case ActivityType::Reversal:               return "an undo cannot itself be undone.";
         case ActivityType::ServiceRequestCreation: return "a service request is cancelled in Task 2 (option 8), not undone here.";
-        case ActivityType::RequestCancelled:       return "a cancelled request cannot be undone - create a new request in Task 2.";
+        case ActivityType::RequestCancelled:       return "a cancelled request cannot be undone. Create a new request in Task 2.";
         default:                                   return "this activity type cannot be undone.";
     }
 }

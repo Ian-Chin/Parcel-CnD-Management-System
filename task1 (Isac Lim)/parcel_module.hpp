@@ -90,7 +90,6 @@ public:
         return list;
     }
 
-public:
     ParcelModule() : seqCounter(0), activityLog(nullptr), guard(nullptr) {}
     void setLog(ActivityLog* log) { activityLog = log; }
     void setGuard(ParcelGuard* g) { guard = g; }
@@ -145,7 +144,7 @@ public:
             if (p && p->status == ParcelStatus::Received) valid[k++] = p;
         }
         if (k == 0) {
-            ui::info("Intake queue is empty - no parcels waiting to be sorted.");
+            ui::info("Intake queue is empty. No parcels waiting to be sorted.");
         } else {
             const int w[5] = { 10, 9, 16, 16, 19 };
             ui::tableLine(w, 5);
@@ -182,7 +181,7 @@ public:
             if (p && p->status == ParcelStatus::Pending) valid[k++] = p;
         }
         if (k == 0) {
-            ui::info("Processing queue is empty - nothing is waiting to be processed.");
+            ui::info("Processing queue is empty. Nothing is waiting to be processed.");
         } else {
             const int w[6] = { 6, 9, 16, 8, 16, 19 };
             ui::tableLine(w, 6);
@@ -285,7 +284,7 @@ public:
         Parcel* p = registry.find(id);
         if (!p) { ui::error("Parcel " + id + " not found."); return false; }
         if (isTerminalStatus(p->status)) {
-            ui::error("Parcel is already '" + statusToString(p->status) + "' - it cannot be changed."); return false;
+            ui::error("Parcel is already '" + statusToString(p->status) + "' and cannot be changed."); return false;
         }
         if (p->status == newStatus) { ui::error("Parcel already has that status."); return false; }
         if (!isAllowedTransition(p->status, newStatus)) {
@@ -294,11 +293,10 @@ public:
             return false;
         }
 
-        // Finishing a parcel by hand would skip Task 2/3, so block it while a job is active.
+        // Changing the status by hand would leave Task 2/3 behind, so block it while a job is active.
         std::string why;
-        if (isTerminalStatus(newStatus) && guard && guard->isBusy(id, why)) {
-            ui::error("Cannot set '" + statusToString(newStatus) + "': " + why +
-                      " Finish or cancel that job first.");
+        if (guard && guard->isBusy(id, why)) {
+            ui::error("Cannot change the status: " + why + ". Finish or cancel that job first.");
             return false;
         }
 
@@ -352,7 +350,7 @@ public:
         seqCounter = 0;
 
         std::ifstream in(path.c_str());
-        if (!in) { ui::warn("Data file '" + path + "' not found - starting with empty records."); return 0; }
+        if (!in) { ui::warn("Data file '" + path + "' not found. Starting with empty records."); return 0; }
         std::string line;
         int lineNo = 0, loaded = 0;
         while (std::getline(in, line)) {
@@ -366,11 +364,11 @@ public:
             if (n != 8 || !toInt(f[4], type) || !toInt(f[6], status) || !toInt(f[7], seq) ||
                 type < 1 || type > 5 || status < 1 || status > 9 || seq < 1 ||
                 !isValidId(f[0]) || !isValidId(f[1]) || !isValidText(f[2]) || !isValidText(f[3]) || f[5].empty()) {
-                ui::warn("Data file line " + std::to_string(lineNo) + " is invalid - skipped.");
+                ui::warn("Data file line " + std::to_string(lineNo) + " is invalid, skipped.");
                 continue;
             }
             if (registry.find(f[0])) {
-                ui::warn("Data file line " + std::to_string(lineNo) + ": duplicate ID " + f[0] + " - skipped.");
+                ui::warn("Data file line " + std::to_string(lineNo) + ": duplicate ID " + f[0] + ", skipped.");
                 continue;
             }
             Parcel p;

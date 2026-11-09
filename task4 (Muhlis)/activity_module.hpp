@@ -15,7 +15,7 @@
 //   temp      - local stack used to walk the history. Popping history onto
 //               temp reverses the order, which gives oldest-first output.
 //
-// Task 1, Task 2 and Task 3 report activities through record() (ActivityLog
+// Task 1, Task 2, Task 3 and Task 5 report activities through record() (ActivityLog
 // connector). Undo reaches the Task 2 requests through RequestLink.
 class ActivityModule : public ActivityLog {
 private:
@@ -193,7 +193,7 @@ public:
     RequestLink* requestLink() const { return requests; }
 
     // Staff ID entered at startup. Used for every activity that does not
-    // bring its own (Task 1, Task 3 and undo).
+    // bring its own (Tasks 1, 2, 3, 5 and undo).
     void setStaff(const std::string& id) { staff = id.empty() ? "-" : id; }
     const std::string& currentStaff() const { return staff; }
     std::string staffId() const override { return staff; }   // for Task 2 (through ActivityLog)
@@ -208,7 +208,7 @@ public:
     bool isEmpty() const { return history.isEmpty(); }
     int  total() const { return history.size(); }
 
-    // ---------- 1. Record (called by Task 1 / Task 2 / Task 3) ----------
+    // ---------- 1. Record (called by Task 1 / Task 2 / Task 3 / Task 5) ----------
 
     void record(ActivityType type, const std::string& parcelId,
                 const std::string& requestId, const std::string& resourceId,
@@ -445,7 +445,10 @@ public:
         saveToFile();                   // rewrite: the undone flag of an old line changed
 
         ui::success(a->activityId + " " + activityName(a) + " undone (recorded as " + r->activityId + ").");
-        ui::success("Parcel " + p->parcelId + " status: " + statusToString(before) + " -> " + statusToString(restore));
+        if (before != restore)
+            ui::success("Parcel " + p->parcelId + " status: " + statusToString(before) + " -> " + statusToString(restore));
+        else
+            ui::info("Parcel " + p->parcelId + " status stays " + statusToString(restore) + ".");
         if (restore == ParcelStatus::Pending)  ui::info("Parcel " + p->parcelId + " is back in the processing queue.");
         if (restore == ParcelStatus::Received) ui::info("Parcel " + p->parcelId + " is back in the intake queue.");
         return true;
@@ -474,7 +477,7 @@ public:
     int loadFromFile(const std::string& path) {
         filePath = path;
         std::ifstream in(path.c_str());
-        if (!in) { ui::warn("Activity file '" + path + "' not found - starting with an empty history."); return 0; }
+        if (!in) { ui::warn("Activity file '" + path + "' not found. Starting with an empty history."); return 0; }
         std::string line;
         int lineNo = 0, loaded = 0, lastNumber = 0;
         while (std::getline(in, line)) {
@@ -490,11 +493,11 @@ public:
             if (number == -1 || f[1].empty() || f[2].empty() || f[3].empty() || f[5].empty() ||
                 !toInt(f[4], type) || !toInt(f[6], prev) || !toInt(f[7], now) || !toInt(f[8], rev) ||
                 type < 1 || type > 18 || prev > 9 || now < 1 || now > 9 || rev > 1 || f[9].empty() || f[10].empty()) {
-                ui::warn("Activity file line " + std::to_string(lineNo) + " is invalid - skipped.");
+                ui::warn("Activity file line " + std::to_string(lineNo) + " is invalid, skipped.");
                 continue;
             }
             if (number <= lastNumber) {       // IDs must keep increasing (oldest first)
-                ui::warn("Activity file line " + std::to_string(lineNo) + ": duplicate or out-of-order ID " + f[0] + " - skipped.");
+                ui::warn("Activity file line " + std::to_string(lineNo) + ": duplicate or out-of-order ID " + f[0] + ", skipped.");
                 continue;
             }
             Activity* a = new Activity;

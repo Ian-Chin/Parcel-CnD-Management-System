@@ -58,7 +58,10 @@ int main() {
         ui::clearScreen();
         if (choice == 1) parcel_menu::run(parcels, PARCEL_FILE);
         else if (choice == 2) request_menu::run(requests, parcels, resources, REQUEST_FILE, PARCEL_FILE, RESOURCE_FILE);
-        else if (choice == 3) resource_menu::run(resources, parcels, RESOURCE_FILE, PARCEL_FILE);
+        else if (choice == 3) {
+            resource_menu::run(resources, parcels, RESOURCE_FILE, PARCEL_FILE);
+            requests.saveToFile(REQUEST_FILE);   // Task 3 may have put a request back to Pending
+        }
         else if (choice == 4) activity_menu::run(activities, parcels, resources, PARCEL_FILE, RESOURCE_FILE, REQUEST_FILE);
         else if (choice == 5) {
             parcels.saveToFile(PARCEL_FILE);                 // write Task 1's latest data first

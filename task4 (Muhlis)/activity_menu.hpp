@@ -52,8 +52,7 @@ static bool isValidParcelId(const std::string& s) {
 }
 
 // Asked once when the program starts. Every activity recorded in this run is
-// stamped with it (Task 2 requests use their own Staff ID instead).
-// Same idea as a Task 2 Staff ID: 2-10 letters/digits, e.g. ST01.
+// stamped with it, including Task 2 requests. 2-10 letters/digits, e.g. ST01.
 inline std::string askStaffId() {
     while (true) {
         std::string s = readId("Staff ID (e.g. ST01)");
@@ -90,9 +89,9 @@ static void doTrace(ActivityModule& m) {
 // Returns true if something was undone (so the caller saves the data files).
 static bool doUndoLatest(ActivityModule& m) {
     ui::section("UNDO LATEST ACTIVITY");
-    if (m.isEmpty()) { ui::info("No activity history yet - nothing to undo."); return false; }
+    if (m.isEmpty()) { ui::info("No activity history yet, so nothing to undo."); return false; }
     Activity* a = m.undoCandidate();
-    if (!a) { ui::info("Nothing to undo - no activity that can be undone is left."); return false; }
+    if (!a) { ui::info("Nothing to undo. No activity that can be undone is left."); return false; }
     m.showActivity(a);
     std::string reason = m.checkUndo(a);
     if (!reason.empty()) {
@@ -109,7 +108,7 @@ static bool doUndoLatest(ActivityModule& m) {
 
 static bool doUndoById(ActivityModule& m) {
     ui::section("UNDO BY ACTIVITY ID");
-    if (m.isEmpty()) { ui::info("No activity history yet - nothing to undo."); return false; }
+    if (m.isEmpty()) { ui::info("No activity history yet, so nothing to undo."); return false; }
     m.displayRecent(RECENT_COUNT);
     std::cout << "\n";
     std::string id = readId("Activity ID (e.g. A0005)");

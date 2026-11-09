@@ -35,7 +35,7 @@ private:
     // Checks the service is allowed for the parcel's current status
     // (report = false: only check, print nothing)
     bool serviceAllowed(ServiceType s, ParcelStatus st, bool report = true) {
-        if (st == ParcelStatus::Received) { if (report) ui::error("Parcel is only Received - sort the parcel first (Task 1)."); return false; }
+        if (st == ParcelStatus::Received) { if (report) ui::error("Parcel is only Received. Sort the parcel first (Task 1)."); return false; }
         if (isTerminalStatus(st)) { if (report) ui::error("Parcel is already " + statusToString(st) + " and cannot take a request."); return false; }
         bool ok = true;   // Return to Sender: any status left here is fine
         if (s == RECIPIENT_COLLECTION) ok = (st == ParcelStatus::ReadyForCollection);
@@ -199,7 +199,7 @@ public:
 
     // 2. Shows the requests still waiting for action
     void displayActive() {
-        cout << "\n  Pending (priority order - top is next):\n";
+        cout << "\n  Pending (priority order, top is next):\n";
         pending.display();
         cout << "\n  Processing (handled by a resource):\n";
         processing.display();
@@ -278,7 +278,7 @@ public:
             processing.removeById(id);
             r->status = RequestStatus::Pending;
             pending.insertSorted(r);
-            ui::warn("No resource is handling parcel " + r->parcelId + ". Request " + id + " is back to Pending - process it again.");
+            ui::warn("No resource is handling parcel " + r->parcelId + ". Request " + id + " is back to Pending. Process it again.");
             return true;
         }
         processing.removeById(id);
@@ -326,7 +326,7 @@ public:
     // Loads requests into the right list; returns how many were loaded
     int loadFromFile(string path) {
         ifstream in(path);
-        if (!in) { ui::warn("File '" + path + "' not found - starting with no requests."); return 0; }
+        if (!in) { ui::warn("File '" + path + "' not found. Starting with no requests."); return 0; }
         string line;
         int loaded = 0;
         while (getline(in, line)) {
@@ -343,14 +343,14 @@ public:
             if (findAnywhere(f[0]) != NULL) { ui::warn("Skipped duplicate request: " + f[0]); continue; }
             Request* r = newRequest(f[0], f[1], f[2], f[3], (ServiceType)service, f[5], (RequestStatus)status, f[7]);
             // An active request whose parcel no longer exists can never run: keep it as Cancelled.
-            // Finished requests stay as they are - they are history even if the parcel was removed.
+            // Finished requests stay as they are, since they are history even if the parcel was removed.
             // If a resource still holds the parcel, leave it active so cancelling it frees the resource.
             if ((r->status == RequestStatus::Pending || r->status == RequestStatus::Processing) && parcels.findParcel(r->parcelId) == NULL) {
                 if (resources.resourceHolding(r->parcelId) == "-") {
-                    ui::warn("Request " + r->requestId + ": parcel " + r->parcelId + " not found - marked Cancelled.");
+                    ui::warn("Request " + r->requestId + ": parcel " + r->parcelId + " not found, marked Cancelled.");
                     r->status = RequestStatus::Cancelled;
                 }
-                else ui::warn("Request " + r->requestId + ": parcel " + r->parcelId + " not found - cancel this request to free its resource.");
+                else ui::warn("Request " + r->requestId + ": parcel " + r->parcelId + " not found. Cancel this request to free its resource.");
             }
             if (r->status == RequestStatus::Pending) pending.insertSorted(r);
             else if (r->status == RequestStatus::Processing) processing.insertEnd(r);

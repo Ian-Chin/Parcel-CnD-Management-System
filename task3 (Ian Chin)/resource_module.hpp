@@ -256,7 +256,7 @@ public:
             return false;
         }
         if (p->status == ParcelStatus::Received) {
-            ui::error("Parcel is only Received - sort the parcel first (Task 1).");
+            ui::error("Parcel is only Received. Sort the parcel first (Task 1).");
             return false;
         }
         if (requestId == "") requestId = "-";
@@ -478,7 +478,7 @@ public:
 
     int loadFromFile(string path) {
         ifstream in(path);
-        if (!in) { ui::warn("File '" + path + "' not found - starting with no resources."); return 0; }
+        if (!in) { ui::warn("File '" + path + "' not found. Starting with no resources."); return 0; }
         string line;
         int loaded = 0;
         while (getline(in, line)) {
