@@ -111,8 +111,6 @@ void run(RequestModule& module, ParcelModule& parcels, ResourceModule& resources
         else if (choice == 9) { heading("REQUEST HISTORY"); module.displayHistory(); }
 
         if (changed) saveAll(module, parcels, resources, requestFile, parcelFile, resourceFile);
-        ui::pause();
-        ui::clearScreen();
     }
     saveAll(module, parcels, resources, requestFile, parcelFile, resourceFile);
 }
