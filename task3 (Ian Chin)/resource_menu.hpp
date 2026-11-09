@@ -133,6 +133,14 @@ void doFinishJob(ResourceModule &m) {
     cout << "\n";
     string id = readId("Resource ID (0 to cancel)");
     if (cancelled(id)) return;
+    // A job from a service request is finished in Task 2, so the request
+    // status changes together with the resource and parcel
+    string requestId = m.requestOf(id);
+    if (requestId != "-" && m.requestsConnected()) {
+        ui::error("This job belongs to request " + requestId +
+                  ". Finish or cancel it from Requests (Task 2).");
+        return;
+    }
     int how = readInt("1 Completed  2 Cancelled  0 Go back", 0, 2);
     if (cancelled(how)) return;
     cout << "\n";

@@ -46,6 +46,8 @@ class RequestLookup {
 public:
     // Returns the ID of the Pending / Processing request for this parcel, or "-"
     virtual string activeRequestFor(string parcelId) = 0;
+    // Processing -> Pending, used when no resource is left to handle the request
+    virtual bool backToPending(string requestId) = 0;
     virtual ~RequestLookup() {}
 };
 

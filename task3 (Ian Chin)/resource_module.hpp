@@ -107,6 +107,16 @@ public:
 
     bool exists(string id) { return findIndex(id) != -1; }
 
+    // True if Task 2 is connected (its requests must be finished from Task 2)
+    bool requestsConnected() { return requestLookup != nullptr; }
+
+    // Returns the Request ID of the job this resource is handling, or "-"
+    string requestOf(string id) {
+        int i = findIndex(id);
+        if (i == -1 || resources[i].status != OCCUPIED) return "-";
+        return resources[i].requestId;
+    }
+
     // Returns the ID of the resource handling this parcel, or "-" if none
     string resourceHolding(string parcelId) const {
         for (int i = 0; i < resourceCount; i++)
@@ -243,6 +253,10 @@ public:
         if (p == nullptr) { ui::error("Parcel " + parcelId + " not found in parcel records."); return false; }
         if (isTerminalStatus(p->status)) {
             ui::error("Parcel " + parcelId + " is already '" + statusToString(p->status) + "' and cannot be assigned.");
+            return false;
+        }
+        if (p->status == ParcelStatus::Received) {
+            ui::error("Parcel is only Received - sort the parcel first (Task 1).");
             return false;
         }
         if (requestId == "") requestId = "-";
@@ -385,6 +399,9 @@ public:
             } else {
                 setParcelStatus(parcelId, ParcelStatus::Pending, ActivityType::ResourceUnavailable, id, requestId);
                 parcels.requeue(parcelId);
+                // The Task 2 request has no resource now, so it waits again
+                if (requestId != "-" && requestLookup && requestLookup->backToPending(requestId))
+                    ui::info("Request " + requestId + " is back to Pending.");
                 ui::warn("No other " + resourceTypeToString(r.type) + " available. Parcel " + parcelId + " must be assigned again later.");
             }
             return true;
