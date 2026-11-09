@@ -351,7 +351,7 @@ public:
         return undoStack.peek(a) ? a : nullptr;
     }
 
-    // Removes the top of the undo stack (used when it can never be undone).
+    // Removes the top of the undo stack (used when it cannot be undone now).
     void dropUndoCandidate() {
         Activity* a;
         undoStack.pop(a);

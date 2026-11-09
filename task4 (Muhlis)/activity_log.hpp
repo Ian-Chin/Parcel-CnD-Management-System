@@ -30,7 +30,7 @@ enum class ActivityType {
 
 // Connector between the task modules and the Task 4 history.
 // Task 1, Task 2, Task 3 and Task 5 keep a pointer to this. When it is nullptr (e.g. in
-// their standalone programs) nothing is reported and they behave exactly as before.
+// the Task 1, 3 and 5 standalone programs) nothing is reported and they behave exactly as before.
 // staffId: who did it. "-" means "use the staff ID entered at startup".
 class ActivityLog {
 public:

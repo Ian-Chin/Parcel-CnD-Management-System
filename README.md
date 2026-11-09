@@ -48,7 +48,7 @@ Each file starts with `#` comment lines that explain its columns and codes.
 
 ## Sample data for a demo
 
-- P001 to P011 cover every parcel status. P009 and P010 are Received and P008 is Pending, ready to sort and process.
+- P001 to P011 cover every parcel status except Cancelled. P009 and P010 are Received and P008 is Pending, ready to sort and process.
 - R005, R006 and R007 are Pending requests with different service types, to show the next-request rule.
 - S01 and DP02 are busy, DP01 is Unavailable and C03 is in Maintenance, to show the error cases. C01, C02, S02, D01 and DP03 are free for new jobs.
 - The latest undoable activity is A0044 (P011 reported Missing).

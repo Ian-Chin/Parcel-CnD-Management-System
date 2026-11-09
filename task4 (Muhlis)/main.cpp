@@ -29,7 +29,7 @@ int main() {
     requests.setLog(&activities);
     resources.setRequestLookup(&requests);
     activities.setRequestLink(&requests);
-    parcels.setGuard(&requests);      // Task 1 cannot remove / finish a parcel a request or resource still uses
+    parcels.setGuard(&requests);      // Task 1 cannot remove or change the status of a parcel a request or resource still uses
 
     cout << "\n";
     activities.setStaff(activity_menu::askStaffId());

@@ -4,7 +4,7 @@
 #include <cstdlib>
 #include "activity_module.hpp"
 
-// Task 4 menu. Own namespace so it can sit next to the Task 1 and Task 3
+// Task 4 menu. Own namespace so it can sit next to the other task
 // menus in the integrated main.cpp without name clashes.
 namespace activity_menu {
 

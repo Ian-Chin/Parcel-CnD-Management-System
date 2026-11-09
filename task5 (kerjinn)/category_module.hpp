@@ -25,23 +25,16 @@ inline bool validParcelId(const string& s) {
     for (size_t i = 0; i < s.size(); i++) if (!isalnum((unsigned char)s[i])) return false;
     return true;
 }
-// Recipient ID: 2 letters + 6 digits, e.g. TP012345
+// Recipient ID: same rule as Task 1, 3 to 12 letters/digits, e.g. TP012345
 inline bool validRecipientId(const string& s) {
-    if (s.size() != 8) return false;
-    for (size_t i = 0; i < 8; i++) {
-        if (i < 2 && !isalpha((unsigned char)s[i])) return false;
-        if (i >= 2 && !isdigit((unsigned char)s[i])) return false;
-    }
-    return true;
+    return validParcelId(s);
 }
+// Name / company: same rule as Task 1, 1 to 40 characters, no commas
 inline bool validText(const string& s) {
     return !s.empty() && s.find(',') == string::npos && s.size() <= 40;
 }
 inline bool validName(const string& s) {
-    if (!validText(s)) return false;
-    for (size_t i = 0; i < s.size(); i++)
-        if (!isalpha((unsigned char)s[i]) && s[i] != ' ' && s[i] != '\'' && s[i] != '.' && s[i] != '-' && s[i] != '/') return false;
-    return true;
+    return validText(s);
 }
 
 // Numbered list; returns chosen item or "" if invalid. If 'current' is given, Enter keeps it.
@@ -87,9 +80,9 @@ private:
             cout << "  [!] Parcel ID " << p.parcelId << " already exists in " << dataFile << ". Use \"Import ONE record\" instead.\n"; return;
         }
         p.recipientId = toUpper(readLine("    Recipient ID (e.g. TP012345): "));
-        if (!validRecipientId(p.recipientId)) { cout << "  [!] Invalid Recipient ID (2 letters + 6 digits, e.g. TP012345).\n"; return; }
+        if (!validRecipientId(p.recipientId)) { cout << "  [!] Invalid Recipient ID (3-12 letters/digits, no spaces).\n"; return; }
         p.recipientName = readLine("    Recipient Name: ");
-        if (!validName(p.recipientName)) { cout << "  [!] Invalid Recipient Name (letters only, no commas, max 40).\n"; return; }
+        if (!validName(p.recipientName)) { cout << "  [!] Invalid Recipient Name (cannot be empty, longer than 40 or contain commas).\n"; return; }
         p.deliveryCompany = readLine("    Delivery Company: ");
         if (!validText(p.deliveryCompany)) { cout << "  [!] Invalid Delivery Company (no commas, max 40).\n"; return; }
         p.category = pickFromList(CATEGORIES, "Parcel Type");
@@ -253,7 +246,7 @@ public:
 
         CategoryParcel np = *cur;
         string in = toUpper(readLine("    Recipient ID [" + cur->recipientId + "]: "));
-        if (!in.empty()) { if (!validRecipientId(in)) { cout << "  [!] Invalid Recipient ID (e.g. TP012345).\n"; return; } np.recipientId = in; }
+        if (!in.empty()) { if (!validRecipientId(in)) { cout << "  [!] Invalid Recipient ID (3-12 letters/digits, no spaces).\n"; return; } np.recipientId = in; }
         in = readLine("    Recipient Name [" + cur->recipientName + "]: ");
         if (!in.empty()) { if (!validName(in)) { cout << "  [!] Invalid Recipient Name.\n"; return; } np.recipientName = in; }
         in = readLine("    Delivery Company [" + cur->deliveryCompany + "]: ");
