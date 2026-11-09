@@ -74,7 +74,7 @@ static void showMenu(ActivityModule& m) {
               << "\n   UNDO\n"
               << "    [4]  Undo latest activity     (top of undo stack)\n"
               << "    [5]  Undo by Activity ID\n"
-              << "\n    [0]  Back (data is saved automatically)\n"
+              << "\n    [0]  Back\n"
               << "  " << ui::repeat("-", ui::WIDTH) << "\n\n";
 }
 

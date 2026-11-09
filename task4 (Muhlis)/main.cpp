@@ -42,7 +42,7 @@ int main() {
              << "    [2]  Task 2 - Requests     (creates activities)\n"
              << "    [3]  Task 3 - Resources    (creates activities)\n"
              << "    [4]  Task 4 - Activity History & Undo\n"
-             << "\n    [0]  Exit (data is saved automatically)\n\n";
+             << "\n    [0]  Exit\n\n";
         int choice = activity_menu::readInt("Choose a module", 0, 4);
         if (choice == 0) break;
         ui::clearScreen();

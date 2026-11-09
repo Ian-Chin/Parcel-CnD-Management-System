@@ -44,19 +44,19 @@ static bool confirm(const string& question) {
 }
 
 static ParcelType chooseType() {
-    cout << "\n    [1] Standard      [2] Large       [3] Fragile\n"
-         << "    [4] Document      [5] Special-Handling\n\n";
+    cout << "\n    [1]  Standard      [2]  Large       [3]  Fragile\n"
+         << "    [4]  Document      [5]  Special-Handling\n\n";
     return static_cast<ParcelType>(readInt("Parcel type (1-5)", 1, 5));
 }
 
 static bool chooseManualStatus(ParcelStatus& out) {
-    cout << "\n    [1] Ready for Collection\n"
-         << "    [2] Out for Delivery\n"
-         << "    [3] Collected\n"
-         << "    [4] Returned\n"
-         << "    [5] Missing\n"
-         << "    [6] Cancelled\n"
-         << "    [0] Back\n\n";
+    cout << "\n    [1]  Ready for Collection\n"
+         << "    [2]  Out for Delivery\n"
+         << "    [3]  Collected\n"
+         << "    [4]  Returned\n"
+         << "    [5]  Missing\n"
+         << "    [6]  Cancelled\n"
+         << "    [0]  Back\n\n";
     int c = readInt("New status", 0, 6);
     if (c == 0) return false;
     ParcelStatus map[6] = { ParcelStatus::ReadyForCollection, ParcelStatus::OutForDelivery,
@@ -87,7 +87,7 @@ static void showMenu(const ParcelModule& m) {
          << "\n   MANAGE RECORDS\n"
          << "    [9]  Update parcel\n"
          << "    [10] Remove parcel\n"
-         << "\n    [0]  Exit (data is saved automatically)\n"
+         << "\n    [0]  Back\n"
          << "  " << ui::repeat("-", ui::WIDTH) << "\n\n";
 }
 
@@ -121,10 +121,10 @@ static void doUpdate(ParcelModule& m) {
     Parcel* p = m.findParcel(pid);
     if (!p) { ui::error("Parcel " + pid + " not found."); return; }
     ui::parcelCard(*p, "CURRENT RECORD");
-    cout << "\n    [1] Recipient name\n"
-         << "    [2] Parcel type (only while status is Received)\n"
-         << "    [3] Status\n"
-         << "    [0] Back\n\n";
+    cout << "\n    [1]  Recipient name\n"
+         << "    [2]  Parcel type (only while status is Received)\n"
+         << "    [3]  Status\n"
+         << "    [0]  Back\n\n";
     int f = readInt("Field to update", 0, 3);
     cout << "\n";
     if (f == 1) {

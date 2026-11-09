@@ -15,7 +15,7 @@ Run it from the repository root, because it reads and writes the files in `data/
 
 At start-up the program asks for a Staff ID (for example `ST01` or `ST02`). This ID is stored on every activity in the history.
 
-Each task saves its data after every change. Choose `0 Save and exit` to save all four data files once more before closing.
+Each task saves its data after every change. Choose `[0] Save and exit` to save all four data files once more before closing.
 
 ## Modules
 

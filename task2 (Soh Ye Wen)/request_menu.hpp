@@ -16,16 +16,16 @@ using resource_menu::heading;
 // Prints the Task 2 menu
 void showMenu() {
     cout << "\n  TASK 2  SERVICE REQUESTS\n\n"
-         << "    1  Create a service request\n"
-         << "    2  Display active requests\n"
-         << "    3  View one request\n"
-         << "    4  Show next request\n"
-         << "    5  Process next request\n"
-         << "    6  Process a chosen request\n"
-         << "    7  Finish a request\n"
-         << "    8  Cancel a request\n"
-         << "    9  Request history\n\n"
-         << "    0  Back\n\n";
+         << "    [1]  Create a service request\n"
+         << "    [2]  Display active requests\n"
+         << "    [3]  View one request\n"
+         << "    [4]  Show next request\n"
+         << "    [5]  Process next request\n"
+         << "    [6]  Process a chosen request\n"
+         << "    [7]  Finish a request\n"
+         << "    [8]  Cancel a request\n"
+         << "    [9]  Request history\n\n"
+         << "    [0]  Back\n\n";
 }
 
 // Asks for the request details and creates it
@@ -38,8 +38,8 @@ bool doCreate(RequestModule& m, ParcelModule& parcels) {
     if (parcelId == "0") return false;
     string recipientId = readId("Recipient ID (0 to cancel)");
     if (recipientId == "0") return false;
-    cout << "\n    1 Recipient Collection   2 Campus Delivery   3 Special Handling\n"
-         << "    4 Return to Sender       5 Re-delivery\n\n";
+    cout << "\n    [1]  Recipient Collection   [2]  Campus Delivery   [3]  Special Handling\n"
+         << "    [4]  Return to Sender       [5]  Re-delivery\n\n";
     int service = readInt("Service (0 to cancel)", 0, 5);
     if (service == 0) return false;
     cout << "\n";

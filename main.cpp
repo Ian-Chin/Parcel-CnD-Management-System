@@ -19,12 +19,12 @@ void showMainMenu(ParcelModule &parcels, ResourceModule &resources) {
          << parcels.countByStatus(ParcelStatus::Pending) << " pending)    "
          << resources.total() << " resources ("
          << resources.countByStatus(AVAILABLE) << " free)\n\n"
-         << "    1  Parcels      register, sort, process\n"
-         << "    2  Requests     service requests\n"
-         << "    3  Resources    counters and delivery staff\n"
-         << "    4  History      activity log and undo\n"
-         << "    5  Categories   parcel search tree\n\n"
-         << "    0  Save and exit\n\n";
+         << "    [1]  Parcels      register, sort, process\n"
+         << "    [2]  Requests     service requests\n"
+         << "    [3]  Resources    counters and delivery staff\n"
+         << "    [4]  History      activity log and undo\n"
+         << "    [5]  Categories   parcel search tree\n\n"
+         << "    [0]  Save and exit\n\n";
 }
 
 int main() {

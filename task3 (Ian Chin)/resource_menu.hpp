@@ -74,12 +74,12 @@ bool cancelled(int choice) {
 
 void showMenu() {
     cout << "\n  TASK 3  RESOURCES\n\n"
-         << "    1  View resources\n"
-         << "    2  Assign a parcel\n"
-         << "    3  Finish a job\n"
-         << "    4  Utilisation report\n"
-         << "    5  Manage resources (add, status, remove)\n\n"
-         << "    0  Back\n\n";
+         << "    [1]  View resources\n"
+         << "    [2]  Assign a parcel\n"
+         << "    [3]  Finish a job\n"
+         << "    [4]  Utilisation report\n"
+         << "    [5]  Manage resources (add, status, remove)\n\n"
+         << "    [0]  Back\n\n";
 }
 
 // Returns 0 if the user cancels
@@ -177,10 +177,10 @@ void doRemove(ResourceModule &m) {
 // Less common admin actions, kept off the main Task 3 menu
 void doManage(ResourceModule &m) {
     heading("MANAGE RESOURCES");
-    cout << "    1  Add resource\n"
-         << "    2  Change status\n"
-         << "    3  Remove resource\n\n"
-         << "    0  Back\n\n";
+    cout << "    [1]  Add resource\n"
+         << "    [2]  Change status\n"
+         << "    [3]  Remove resource\n\n"
+         << "    [0]  Back\n\n";
     int choice = readInt("Choose", 0, 3);
     if (cancelled(choice)) return;
     if (choice == 1) doRegister(m);
