@@ -133,6 +133,7 @@ void doFinishJob(ResourceModule &m) {
     cout << "\n";
     string id = readId("Resource ID (0 to cancel)");
     if (cancelled(id)) return;
+    if (!m.exists(id)) { ui::error("Resource " + id + " not found."); return; }
     // A job from a service request is finished in Task 2, so the request
     // status changes together with the resource and parcel
     string requestId = m.requestOf(id);

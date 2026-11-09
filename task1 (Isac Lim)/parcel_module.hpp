@@ -52,6 +52,8 @@ private:
         out = std::stoi(s);
         return true;
     }
+public:
+    // Public so Task 5 can apply the same rule when it updates a parcel.
     // Which manual status changes make sense. Received / Pending / Processing
     // can only be left through sorting / processing, or by Missing / Cancelled.
     // Collected is only reachable from Ready for Collection or Out for Delivery.

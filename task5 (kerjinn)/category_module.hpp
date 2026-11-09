@@ -2,7 +2,7 @@
 #ifndef CATEGORY_MODULE_HPP
 #define CATEGORY_MODULE_HPP
 #include "parcel_tree.hpp"
-#include "../task1 (Isac Lim)/parcel_guard.hpp"
+#include "../task1 (Isac Lim)/parcel_module.hpp"   // shared status-change rule
 #include "../task4 (Muhlis)/activity_log.hpp"
 
 namespace task5 {
@@ -280,6 +280,11 @@ public:
             if (isTerminalStatus(oldS)) { cout << "  [!] Parcel is already " << cur->status << ", its status cannot be changed.\n"; return; }
             if (newS == ParcelStatus::Received || newS == ParcelStatus::Pending || newS == ParcelStatus::Processing) {
                 cout << "  [!] " << np.status << " is set by Task 1 sorting/processing, not by hand.\n"; return;
+            }
+            if (!ParcelModule::isAllowedTransition(oldS, newS)) {
+                cout << "  [!] Invalid change: " << cur->status << " -> " << np.status << ".\n"
+                     << "      From " << cur->status << " you can only go to: " << ParcelModule::allowedTargets(oldS) << ".\n";
+                return;
             }
             if (inUse(id, why)) { cout << "  [!] Cannot change the status: " << why << ". Finish or cancel that job first.\n"; return; }
         }

@@ -165,17 +165,22 @@ public:
         string line = trim(raw);
         if (line.empty() || line[0] == '#') return false;
         stringstream ss(line);
-        string f[8]; int k = 0;
-        while (k < 8 && getline(ss, f[k], ',')) { f[k] = trim(f[k]); k++; }
-        if (k < 7 || f[0].empty()) return false;
+        string f[9]; int k = 0;
+        while (k < 9 && getline(ss, f[k], ',')) { f[k] = trim(f[k]); k++; }
+        // Same rules as Task 1's loader, so both modules hold the same parcels:
+        // exactly 8 fields, known type / status, seq >= 1, no empty fields.
+        if (k != 8) return false;
+        for (int i = 0; i < 8; i++) if (f[i].empty()) return false;
+        if (f[0].size() < 3 || f[0].size() > 12) return false;
+        for (size_t i = 0; i < f[0].size(); i++) if (!isalnum((unsigned char)f[0][i])) return false;
+        int type = atoi(f[4].c_str()), stat = atoi(f[6].c_str()), seq = atoi(f[7].c_str());
+        if (type < 1 || type > NUM_CATEGORIES || stat < 1 || stat > NUM_STATUSES || seq < 1) return false;
         p.parcelId = toUpper(f[0]);  p.recipientId = f[1];
         p.recipientName = f[2];      p.deliveryCompany = f[3];
-        int type = atoi(f[4].c_str());
-        p.category = (type >= 1 && type <= NUM_CATEGORIES) ? CATEGORIES[type - 1] : CATEGORIES[0];
+        p.category = CATEGORIES[type - 1];
         p.arrival = f[5];
-        int stat = atoi(f[6].c_str());
-        p.status = (stat >= 1 && stat <= NUM_STATUSES) ? STATUSES[stat - 1] : STATUSES[0];
-        p.seq = (k >= 8) ? atoi(f[7].c_str()) : 0;
+        p.status = STATUSES[stat - 1];
+        p.seq = seq;
         return true;
     }
     static bool findInFile(const string& file, const string& id, CategoryParcel& out) {

@@ -455,7 +455,8 @@ public:
              << "  Currently occupied   : " << countByStatus(OCCUPIED) << " of " << resourceCount << "\n";
         if (totalJobs > 0)
             cout << "  Busiest resource     : " << resources[busiest].resourceId
-                 << " (" << resources[busiest].transactions << " jobs)\n";
+                 << " (" << resources[busiest].transactions
+                 << (resources[busiest].transactions == 1 ? " job)\n" : " jobs)\n");
     }
 
     // ---------- File save / load ----------
