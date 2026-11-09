@@ -52,6 +52,41 @@ private:
         out = std::stoi(s);
         return true;
     }
+    // Which manual status changes make sense. Received / Pending / Processing
+    // can only be left through sorting / processing, or by Missing / Cancelled.
+    // Collected is only reachable from Ready for Collection or Out for Delivery.
+    static bool isAllowedTransition(ParcelStatus from, ParcelStatus to) {
+        switch (from) {
+            case ParcelStatus::Received:
+            case ParcelStatus::Pending:
+                return to == ParcelStatus::Missing || to == ParcelStatus::Cancelled;
+            case ParcelStatus::Processing:
+                return to == ParcelStatus::ReadyForCollection || to == ParcelStatus::OutForDelivery ||
+                       to == ParcelStatus::Returned || to == ParcelStatus::Missing ||
+                       to == ParcelStatus::Cancelled;
+            case ParcelStatus::ReadyForCollection:
+                return to == ParcelStatus::OutForDelivery || to == ParcelStatus::Collected ||
+                       to == ParcelStatus::Returned || to == ParcelStatus::Missing ||
+                       to == ParcelStatus::Cancelled;
+            case ParcelStatus::OutForDelivery:
+                return to == ParcelStatus::ReadyForCollection || to == ParcelStatus::Collected ||
+                       to == ParcelStatus::Returned || to == ParcelStatus::Missing ||
+                       to == ParcelStatus::Cancelled;
+            default:
+                return false;   // terminal statuses never change
+        }
+    }
+    static std::string allowedTargets(ParcelStatus from) {
+        std::string list;
+        for (int s = 1; s <= 9; ++s) {
+            ParcelStatus t = static_cast<ParcelStatus>(s);
+            if (isAllowedTransition(from, t)) {
+                if (!list.empty()) list += ", ";
+                list += statusToString(t);
+            }
+        }
+        return list;
+    }
 
 public:
     ParcelModule() : seqCounter(0), activityLog(nullptr), guard(nullptr) {}
@@ -251,6 +286,11 @@ public:
             ui::error("Parcel is already '" + statusToString(p->status) + "' - it cannot be changed."); return false;
         }
         if (p->status == newStatus) { ui::error("Parcel already has that status."); return false; }
+        if (!isAllowedTransition(p->status, newStatus)) {
+            ui::error("Invalid change: '" + statusToString(p->status) + "' -> '" + statusToString(newStatus) + "'.");
+            ui::info("From '" + statusToString(p->status) + "' you can only go to: " + allowedTargets(p->status) + ".");
+            return false;
+        }
 
         // Finishing a parcel by hand would skip Task 2/3, so block it while a job is active.
         std::string why;
@@ -301,10 +341,11 @@ public:
         return true;
     }
 
-        int loadFromFile(const std::string& path) {
+    int loadFromFile(const std::string& path) {
         // Always start from a clean slate so a reload (e.g. after Task 5)
         // does not hit "duplicate ID" and keep stale in-memory data.
         registry.clear();
+        intakeQueue.clear();
         processQueue.clear();
         seqCounter = 0;
 
