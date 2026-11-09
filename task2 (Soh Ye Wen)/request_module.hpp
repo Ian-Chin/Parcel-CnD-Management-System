@@ -33,14 +33,15 @@ private:
     }
 
     // Checks the service is allowed for the parcel's current status
-    bool serviceAllowed(ServiceType s, ParcelStatus st) {
-        if (st == ParcelStatus::Received) { ui::error("Parcel is only Received - sort the parcel first (Task 1)."); return false; }
-        if (isTerminalStatus(st)) { ui::error("Parcel is already " + statusToString(st) + " and cannot take a request."); return false; }
+    // (report = false: only check, print nothing)
+    bool serviceAllowed(ServiceType s, ParcelStatus st, bool report = true) {
+        if (st == ParcelStatus::Received) { if (report) ui::error("Parcel is only Received - sort the parcel first (Task 1)."); return false; }
+        if (isTerminalStatus(st)) { if (report) ui::error("Parcel is already " + statusToString(st) + " and cannot take a request."); return false; }
         bool ok = true;   // Return to Sender: any status left here is fine
         if (s == RECIPIENT_COLLECTION) ok = (st == ParcelStatus::ReadyForCollection);
         if (s == CAMPUS_DELIVERY || s == RE_DELIVERY) ok = (st == ParcelStatus::OutForDelivery || st == ParcelStatus::ReadyForCollection);
         if (s == SPECIAL_HANDLING) ok = (st == ParcelStatus::Processing);
-        if (!ok) ui::error("Invalid service operation: " + serviceToString(s) + " is not allowed while the parcel is " + statusToString(st) + ".");
+        if (!ok && report) ui::error("Invalid service operation: " + serviceToString(s) + " is not allowed while the parcel is " + statusToString(st) + ".");
         return ok;
     }
 
@@ -95,9 +96,15 @@ private:
         ui::warn("Parcel " + r->parcelId + " " + why + ". Request " + r->requestId + " closed as " + requestStatusToString(r->status) + ".");
     }
 
-    // Asks Task 3 for a resource; on success moves the request to processing
+    // True if the request can be started now: parcel not finished and service allowed
+    bool canStart(Request* r) {
+        return !parcelFinished(r) && serviceAllowed(r->service, parcels.findParcel(r->parcelId)->status, false);
+    }
+
+    // Asks Task 3 for a resource; on success moves the request to processing.
+    // Returns true if the data changed (request started, or closed because its parcel is finished).
     bool startRequest(Request* r) {
-        if (parcelFinished(r)) { closeFinished(r); return false; }
+        if (parcelFinished(r)) { closeFinished(r); return true; }
         // The parcel status may have changed since the request was created
         if (!serviceAllowed(r->service, parcels.findParcel(r->parcelId)->status)) {
             ui::info("Request " + r->requestId + " stays Pending. Update the parcel first or cancel the request.");
@@ -205,19 +212,36 @@ public:
         showRequest(r);
     }
 
-    // 4. Shows the next request without removing it
+    // 4. Shows the request that "Process next" would handle, without removing it
     void showNext() {
         if (pending.isEmpty()) { ui::info("No pending requests. The queue is empty."); return; }
+        Request* r = pending.first();
+        while (r != NULL && !canStart(r)) r = r->next;   // same skipping as processNext
+        if (r == NULL) { ui::info("No pending request can be processed right now (check the parcel statuses)."); return; }
         cout << "  Next request to be handled:\n\n";
-        showRequest(pending.first());
+        showRequest(r);
     }
 
-    // 5. Processes the request at the front of the priority queue
+    // 5. Processes the highest-priority request that can be served now.
+    // Requests whose parcel is finished are closed. Requests whose service is not
+    // allowed for the parcel's current status are skipped but stay Pending with
+    // their priority, so they run once the parcel status allows it.
     bool processNext() {
-        // Requests whose parcel is already finished are closed and skipped
-        while (!pending.isEmpty() && parcelFinished(pending.first())) closeFinished(pending.first());
         if (pending.isEmpty()) { ui::error("No pending requests. The queue is empty."); return false; }
-        return startRequest(pending.first());
+        bool changed = false;
+        Request* r = pending.first();
+        while (r != NULL) {
+            Request* after = r->next;   // saved first: closing r moves it to history
+            if (parcelFinished(r)) { closeFinished(r); changed = true; }
+            else if (!serviceAllowed(r->service, parcels.findParcel(r->parcelId)->status, false))
+                ui::warn("Request " + r->requestId + " skipped: " + serviceToString(r->service) + " is not allowed while parcel "
+                         + r->parcelId + " is " + statusToString(parcels.findParcel(r->parcelId)->status) + ". It stays Pending.");
+            else return startRequest(r) || changed;
+            r = after;
+        }
+        if (pending.isEmpty()) ui::error("No pending requests. The queue is empty.");
+        else ui::error("No pending request can be processed right now (check the parcel statuses).");
+        return changed;
     }
 
     // 6. Processes a request chosen by ID
